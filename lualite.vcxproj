@@ -24,6 +24,7 @@
     <ProjectGuid>{a250f253-4946-487b-b2f0-17a3fc378b24}</ProjectGuid>
     <RootNamespace>lualite</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+    <ProjectName>luacpp</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
