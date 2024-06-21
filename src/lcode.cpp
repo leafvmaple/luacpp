@@ -117,7 +117,7 @@ void luaK_ret(FuncState* fs, int first, int nret) {
 
 int luaK_stringK(FuncState* fs, TString* s) {
     TValue o;
-    setsvalue(&o, s, s->s.c_str());
+    setgcvalue(&o, s, s->s.c_str());
     return addk(fs, &o, &o);
 }
 

@@ -24,7 +24,7 @@ int luaV_tostring(lua_State* L, TValue* obj) {
     char s[LUAI_MAXNUMBER2STR];
     lua_Number n = obj->value.n;
     lua_number2str(s, n);
-    setsvalue(obj, luaS_new(L, s), s);
+    setgcvalue(obj, luaS_new(L, s), s);
     return 1;
 }
 
@@ -64,7 +64,7 @@ void luaV_execute(lua_State* L, int nexeccalls) {
         case OP_GETGLOBAL: {
             TValue g;
             TValue* rb = KBx(k, i);
-            sethvalue(&g, cl->env);
+            setgcvalue(&g, cl->env);
             luaV_gettable(L, &g, rb, ra);
             continue;
         }
@@ -86,7 +86,7 @@ void luaV_execute(lua_State* L, int nexeccalls) {
         }
         case OP_SETGLOBAL: {
             TValue g;
-            sethvalue(&g, cl->env);
+            setgcvalue(&g, cl->env);
             luaV_settable(L, &g, KBx(k, i), ra);
             continue;
         }

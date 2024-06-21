@@ -37,8 +37,8 @@ void stack_init(lua_State* L) {
 void f_luaopen(lua_State* L) {
     stack_init(L);
 
-    sethvalue(gt(L), luaH_new(L, 0, 2));
-    sethvalue(registry(L), luaH_new(L, 0, 2));
+    setgcvalue(gt(L), luaH_new(L, 0, 2));
+    setgcvalue(registry(L), luaH_new(L, 0, 2));
 
     luaS_resize(L, MINSTRTABSIZE);
 

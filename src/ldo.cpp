@@ -79,7 +79,7 @@ void f_parser(lua_State* L, SParser* p) {
     tf = luaY_parser(L, p->z, p->name);
     cl = luaF_newLclosure(L, 0, static_cast<Table*>(gt(L)->value.gc));
     cl->p = tf;
-    setclvalue(L->top, cl);
+    setgcvalue(L->top, cl);
     L->top++;
 }
 

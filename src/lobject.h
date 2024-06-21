@@ -85,7 +85,7 @@ union GCObject;
 
 struct GCheader{
     // GCObject* next;
-    TVALUE_TYPE tt = LUA_TNIL;
+    TVALUE_TYPE tt = LUA_TNIL;  // GC的时候使用，来判断类型
     lua_marked marked;
 
     virtual ~GCheader() {}
@@ -124,6 +124,8 @@ struct TString: GCheader {
     unsigned int hash     = 0;
     std::string  s;
 
+    enum { t = LUA_TSTRING };
+
     TString() { tt = LUA_TSTRING; }
 };
 
@@ -157,6 +159,8 @@ struct Table : GCheader {
     Table* metatable = nullptr;
     std::vector<TValue> array;
     std::unordered_map<const TValue, TValue, KeyFunction> node;
+
+    enum { t = LUA_TTABLE };
 };
 
 
@@ -164,6 +168,8 @@ struct Closure : GCheader {
     lu_byte   isC     = false;
     GCObject* gclist  = nullptr;
     Table*    env     = nullptr;
+
+    enum { t = LUA_TFUNCTION };
 };
 
 struct UpVal : GCheader {
@@ -185,6 +191,8 @@ struct Proto : GCheader {
     std::vector<Instruction> code;         /* 指令列表 */
     std::vector<int>         lineinfo;     /* 指令列表中每个指令所在的line */
     std::vector<Proto*>      p;            /* 函数内嵌套函数 */
+
+    enum { t = LUA_TPROTO };
 };
 
 // C函数中的指令和数据都在代码段数据段中，只需要一个函数指针入口即可
@@ -214,13 +222,21 @@ void setnilvalue(TValue* obj _DECL);
 void setnvalue(TValue* obj, const lua_Number n _DECL);
 void setpvalue(TValue* obj, void* p _DECL);
 void setbvalue(TValue* obj, const bool b _DECL);
-void setsvalue(TValue* obj, const TString* s _DECL);
-void sethvalue(TValue* obj, const Table* h _DECL);
-void setclvalue(TValue* obj, const Closure* cl _DECL);
-void setptvalue(TValue* obj, const Proto* pt _DECL);
 void setobj(TValue* desc, const TValue* src);
 
 const TValue luaO_nilobject_;
 #define luaO_nilobject (&luaO_nilobject_)
+
+// setsvalue
+// sethvalue
+// setclvalue
+// setptvalue
+
+template<typename T>
+void setgcvalue(TValue* obj, const T* x _DECL) {
+    obj->tt = TVALUE_TYPE(T::t);
+    obj->value.gc = const_cast<T*>(x);
+    SET_DEBUG_NAME(obj, debug);
+}
 
 int luaO_str2d(const char* s, lua_Number* result);

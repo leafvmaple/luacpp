@@ -93,8 +93,8 @@ static void open_func(LexState* ls, FuncState* fs) {
     fs->L = ls->L;
     ls->fs = fs;
 
-    sethvalue(L->top++, fs->h, "#[open_func] Const String#");
-    setptvalue(L->top++, fs->f, "#[open_func] Proto#");
+    setgcvalue(L->top++, fs->h, "#[open_func] Const String#");
+    setgcvalue(L->top++, fs->f, "#[open_func] Proto#");
 }
 
 static void close_func(LexState* ls) {

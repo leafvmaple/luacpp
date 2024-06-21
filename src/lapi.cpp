@@ -18,7 +18,7 @@ TValue* index2adr(lua_State* L, int idx) {
     case LUA_REGISTRYINDEX: return registry(L);
     case LUA_ENVIRONINDEX: {
         Closure* func = static_cast<Closure*>(L->ci->func->value.gc);
-        sethvalue(&L->env, func->env);
+        setgcvalue(&L->env, func->env);
         return &L->env;
     }
     case LUA_GLOBALSINDEX: return gt(L);
@@ -41,7 +41,7 @@ static void f_Ccall(lua_State* L, CCallS* c) {
     CClosure* cl;
     cl = luaF_newCclosure(L, 0, getcurrenv(L));
     cl->f = c->func;
-    setclvalue(L->top++, cl, "#[f_Ccall] CClosure#");
+    setgcvalue(L->top++, cl, "#[f_Ccall] CClosure#");
     setpvalue(L->top++, c->ud, "#[f_Ccall] ud#");
     luaD_call(L, L->top - 2, 0);
 }
@@ -52,7 +52,7 @@ void lua_pushnil(lua_State* L) {
 }
 
 void lua_pushlstring(lua_State* L, const char* s, size_t l _IMPL) {
-    setsvalue(L->top++, luaS_newlstr(L, s, l), debug ? debug : s);
+    setgcvalue(L->top++, luaS_newlstr(L, s, l), debug ? debug : s);
 }
 
 void lua_pushstring(lua_State* L, const char* s _IMPL) {
@@ -74,7 +74,7 @@ void lua_pushcclosure(lua_State* L, lua_CFunction fn, int n _IMPL) {
     L->top -= n;
     while (n--)
         setobj(&cl->upvalue[n], L->top + n);
-    setclvalue(L->top, cl, debug);
+    setgcvalue(L->top, cl, debug);
     L->top++;
 }
 
@@ -92,13 +92,13 @@ void lua_setfield(lua_State* L, int idx, const char* k) {
     TValue key;
     TValue* t = index2adr(L, idx);;
 
-    setsvalue(&key, luaS_new(L, k), k);
+    setgcvalue(&key, luaS_new(L, k), k);
     luaV_settable(L, t, &key, L->top - 1);
     L->top--;
 }
 
 void lua_createtable(lua_State* L, int narr, int nrec _IMPL) {
-    sethvalue(L->top, luaH_new(L, narr, nrec), debug);
+    setgcvalue(L->top, luaH_new(L, narr, nrec), debug);
     L->top++;
 }
 
@@ -121,7 +121,7 @@ void lua_gettable(lua_State* L, int idx) {
 void lua_getfield(lua_State* L, int idx, const char* k) {
     TValue key;
     TValue* t = index2adr(L, idx);
-    setsvalue(&key, luaS_new(L, k));
+    setgcvalue(&key, luaS_new(L, k));
     luaV_gettable(L, t, &key, L->top);
     L->top++;
 }

@@ -57,6 +57,8 @@ struct lua_State : GCheader
     TValue l_gt;  /* table of globals */
     TValue env;
 
+    enum { t = LUA_TTHREAD };
+
     lua_State() { tt = LUA_TTHREAD; }
 };
 
