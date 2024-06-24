@@ -13,14 +13,11 @@ void setnodevector(lua_State* L, Table* t, int size) {
     t->node.reserve(size);
 }
 
-Table* luaH_new(lua_State* L, int narray, int nhash) {
-    Table* t = new Table;
-    luaC_link(L, t, LUA_TTABLE);
+Table::Table(lua_State* L, int narray, int nhash) {
+    luaC_link(L, this, LUA_TTABLE);
 
-    setarrayvector(L, t, narray);
-    setnodevector(L, t, nhash);
-
-    return t;
+    setarrayvector(L, this, narray);
+    setnodevector(L, this, nhash);
 }
 
 TValue* newkey(lua_State* L, Table* t, const TValue* key) {

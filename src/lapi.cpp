@@ -42,12 +42,12 @@ static void f_Ccall(lua_State* L, CCallS* c) {
     cl = luaF_newCclosure(L, 0, getcurrenv(L));
     cl->f = c->func;
     setgcvalue(L->top++, cl, "#[f_Ccall] CClosure#");
-    setpvalue(L->top++, c->ud, "#[f_Ccall] ud#");
+    L->top++->setvalue(c->ud, "#[f_Ccall] ud#");
     luaD_call(L, L->top - 2, 0);
 }
 
 void lua_pushnil(lua_State* L) {
-    setnilvalue(L->top);
+    L->top->setnil();
     L->top++;
 }
 
@@ -98,8 +98,7 @@ void lua_setfield(lua_State* L, int idx, const char* k) {
 }
 
 void lua_createtable(lua_State* L, int narr, int nrec _IMPL) {
-    setgcvalue(L->top, luaH_new(L, narr, nrec), debug);
-    L->top++;
+    L->top++->setvalue(new Table(L, narr, nrec), debug);
 }
 
 void* lua_touserdata(lua_State* L, int idx) {
@@ -133,7 +132,7 @@ int lua_gettop(lua_State* L) {
 void lua_settop(lua_State* L, int idx) {
     if (idx >= 0)
         while (L->top < L->base + idx)
-            setnilvalue(L->top++);
+            L->top++->setnil();
     else
         L->top += idx + 1;
 }

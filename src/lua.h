@@ -30,7 +30,7 @@ enum TVALUE_TYPE {
 #define LUA_ENVIRONINDEX	(-10001)
 #define LUA_GLOBALSINDEX	(-10002)
 
-#define _DECL , char const* debug = nullptr
+#define _NAME char const* debug = nullptr
 #define _IMPL , char const* debug
 
 typedef std::function<int(lua_State*)> lua_CFunction;
@@ -39,11 +39,11 @@ typedef const char* (*lua_Reader) (lua_State* L, void* ud, size_t* sz);
 lua_State* lua_newstate();
 
 void lua_pushnil(lua_State* L);
-void lua_pushlstring(lua_State* L, const char* s, size_t l _DECL);
-void lua_pushstring(lua_State* L, const char* s _DECL);
+void lua_pushlstring(lua_State* L, const char* s, size_t l, _NAME);
+void lua_pushstring(lua_State* L, const char* s, _NAME);
 void lua_pushvalue(lua_State* L, int idx);
-void lua_pushcclosure(lua_State* L, lua_CFunction fn, int n _DECL);
-void lua_pushcfunction(lua_State* L, lua_CFunction f _DECL);
+void lua_pushcclosure(lua_State* L, lua_CFunction fn, int n, _NAME);
+void lua_pushcfunction(lua_State* L, lua_CFunction f, _NAME);
 
 void* lua_touserdata(lua_State* L, int idx);
 
@@ -59,7 +59,7 @@ inline void lua_setglobal(lua_State* L, const char* s) {
     lua_setfield(L, LUA_GLOBALSINDEX, s);
 }
 
-void lua_createtable(lua_State* L, int narr, int nrec _DECL);
+void lua_createtable(lua_State* L, int narr, int nrec, _NAME);
 
 int lua_gettop(lua_State* L);
 void lua_settop(lua_State* L, int idx);

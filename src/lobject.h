@@ -100,10 +100,10 @@ union Value {
 
 
 #ifdef _DEBUG
-#define SET_DEBUG_NAME(t, s) if (s) {(((t)->name) = (s));}
+#define _SET_DEBUG_NAME if (debug) {((this->name) = (debug));}
 #define COPY_DEBUG_NAME(d, s) (((d)->name) = (s)->name)
 #else
-#define SET_DEBUG_NAME(t, s)
+#define SET_DEBUG_NAME
 #define COPY_DEBUG_NAME(d, s)
 #endif
 
@@ -115,20 +115,27 @@ struct TValue {
     Value value;
     TVALUE_TYPE tt = LUA_TNIL;
 
-    void setvalue(const lua_Number n) {
+    void setnil(_NAME) { _SET_DEBUG_NAME
+        tt = LUA_TNIL;
+#ifdef _DEBUG
+        value.gc = nullptr; // Debug 模式下清理数据
+#endif
+    }
+
+    void setvalue(const lua_Number n, _NAME) { _SET_DEBUG_NAME
         tt = LUA_TNUMBER;
         value.n = n;
     }
-    void setvalue(void* p) {
+    void setvalue(void* p, _NAME) { _SET_DEBUG_NAME
         tt = LUA_TLIGHTUSERDATA;
         value.p = p;
     }
-    void setvalue(const bool b) {
+    void setvalue(const bool b, _NAME) { _SET_DEBUG_NAME
         tt = LUA_TBOOLEAN;
         value.b = b;
     }
     template<typename T>
-    void setvalue(const T* x) {
+    void setvalue(const T* x, _NAME) { _SET_DEBUG_NAME
         tt = TVALUE_TYPE(T::t);
         value.gc = const_cast<T*>(x);
     }
@@ -186,6 +193,8 @@ struct Table : GCheader {
     std::unordered_map<const TValue, TValue, KeyFunction> node;
 
     enum { t = LUA_TTABLE };
+
+    Table(lua_State* L, int narray, int nhash);
 
     TValue* setstr(lua_State* L, const TString* key);
     TValue* set(lua_State* L, const TValue* key);
@@ -249,24 +258,14 @@ inline bool ttisstring(TValue* obj) {
     return obj->tt == LUA_TSTRING;
 }
 
-void setnilvalue(TValue* obj _DECL);
-void setnvalue(TValue* obj, const lua_Number n _DECL);
-void setpvalue(TValue* obj, void* p _DECL);
-void setbvalue(TValue* obj, const bool b _DECL);
 void setobj(TValue* desc, const TValue* src);
 
 const TValue luaO_nilobject_;
 #define luaO_nilobject (&luaO_nilobject_)
 
-// setsvalue
-// sethvalue
-// setclvalue
-// setptvalue
-
 template<typename T>
-void setgcvalue(TValue* obj, const T* x _DECL) {
-    obj->setvalue(x);
-    SET_DEBUG_NAME(obj, debug);
+void setgcvalue(TValue* obj, const T* x, _NAME) {
+    obj->setvalue(x, debug);
 }
 
 int luaO_str2d(const char* s, lua_Number* result);

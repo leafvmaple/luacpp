@@ -10,7 +10,7 @@ static int addk(FuncState* fs, TValue* k, TValue* v) {
     TValue* idx = fs->h->set(fs->L, k);
     
     int nk = (int)fs->f->k.size();
-    setnvalue(idx, nk);
+    idx->setvalue((lua_Number)nk);
     fs->f->k.push_back(*v);
     return nk;
 }
@@ -122,7 +122,6 @@ int luaK_stringK(FuncState* fs, TString* s) {
 }
 
 int luaK_numberK(FuncState* fs, lua_Number r) {
-    TValue o;
-    setnvalue(&o, r);
+    TValue o(r);
     return addk(fs, &o, &o);
 }

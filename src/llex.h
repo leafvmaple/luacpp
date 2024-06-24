@@ -25,10 +25,10 @@ struct LexState {
     ZIO*        z          = nullptr;
     std::string buff;
     TString*    source     = nullptr;
+
+    TString* newstring(const char* str, size_t l);
+    void setinput(lua_State* L, ZIO* z, TString* source);
+    void nexttoken();
 };
 
 void luaX_init(lua_State* L);
-TString* luaX_newstring(LexState* ls, const char* str, size_t l);
-void luaX_setinput(lua_State* L, LexState* ls, ZIO* z, TString* source);
-// 记录当前token位置，并获取下一个token
-void luaX_next(LexState* ls);

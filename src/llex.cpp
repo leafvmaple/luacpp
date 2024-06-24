@@ -5,6 +5,7 @@
 #include "lparser.h"
 #include "ltable.h"
 
+// 读取下一个字符
 void next(LexState* ls) {
     ls->current = zgetc(ls->z);
 }
@@ -54,19 +55,19 @@ void luaX_init(lua_State* L) {
     }
 }
 
-TString* luaX_newstring(LexState* ls, const char* str, size_t l) {
-    lua_State* L = ls->L;
+TString* LexState::newstring(const char* str, size_t l) {
+    lua_State* L = this->L;
     TString* ts = luaS_newlstr(L, str, l);
-    TValue* o = ls->fs->h->setstr(L, ts);
-    setbvalue(o, true);
+    TValue* o = fs->h->setstr(L, ts);
+    o->setvalue(true);
     return ts;
 }
 
-void luaX_setinput(lua_State* L, LexState* ls, ZIO* z, TString* source) {
-    ls->L = L;
-    ls->z = z;
-    ls->source = source;
-    next(ls);
+void LexState::setinput(lua_State* L, ZIO* z, TString* source) {
+    this->L = L;
+    this->z = z;
+    this->source = source;
+    next(this);
 }
 
 /* LUA_NUMBER */
@@ -85,9 +86,10 @@ static void read_string(LexState* ls, int del, SemInfo* seminfo) {
         save_and_next(ls);
     }
     save_and_next(ls);  /* skip delimiter */
-    seminfo->ts = luaX_newstring(ls, ls->buff.c_str() + 1, ls->buff.size() - 2);
+    seminfo->ts = ls->newstring(ls->buff.c_str() + 1, ls->buff.size() - 2);
 }
 
+// 解析Token
 static int llex(LexState* ls, SemInfo* seminfo) {
     ls->buff.clear();
     while (true) {
@@ -114,7 +116,7 @@ static int llex(LexState* ls, SemInfo* seminfo) {
                 do {
                     save_and_next(ls);
                 } while (isalnum(ls->current) || ls->current == '_');
-                ts = luaX_newstring(ls, ls->buff.c_str(), ls->buff.size());
+                ts = ls->newstring(ls->buff.c_str(), ls->buff.size());
                 if (ts->reserved)
                     return ts->reserved;
                 else {
@@ -132,7 +134,7 @@ static int llex(LexState* ls, SemInfo* seminfo) {
     }
 }
 
-void luaX_next(LexState* ls){
-    ls->lastline = ls->linenumber;
-    ls->t.token = llex(ls, &ls->t.seminfo);
+void LexState::nexttoken() {
+    lastline = linenumber;
+    t.token = llex(this, &t.seminfo);
 }

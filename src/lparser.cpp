@@ -15,7 +15,7 @@ static void expr(LexState* ls, expdesc* v);
 // 获取Token是否等于c，是则获取下一个Token并返回true
 static int testnext(LexState* ls, int c) {
     if (ls->t.token == c) {
-        luaX_next(ls);
+        ls->nexttoken();
         return 1;
     }
     return 0;
@@ -27,7 +27,7 @@ static void check_match(LexState* ls, int what) {
 
 static TString* str_checkname(LexState* ls) {
     TString* ts = ls->t.seminfo.ts;
-    luaX_next(ls);
+    ls->nexttoken();
     return ts;
 }
 
@@ -87,14 +87,14 @@ static void pushclosure(LexState* ls, FuncState* func, expdesc* v) {
 static void open_func(LexState* ls, FuncState* fs) {
     lua_State* L = ls->L;
     fs->f = luaF_newproto(L);
-    fs->h = luaH_new(L, 0, 0);
+    fs->h = new Table(L, 0, 0);
     fs->prev = ls->fs;
     fs->ls = ls;
     fs->L = ls->L;
     ls->fs = fs;
 
-    setgcvalue(L->top++, fs->h, "#[open_func] Const String#");
-    setgcvalue(L->top++, fs->f, "#[open_func] Proto#");
+    L->top++->setvalue(fs->h, "#[open_func] Const String#");
+    L->top++->setvalue(fs->f, "#[open_func] Proto#");
 }
 
 static void close_func(LexState* ls) {
@@ -114,9 +114,9 @@ Proto* luaY_parser(lua_State* L, ZIO* z, const char* name) {
     LexState ls;
     FuncState fs;
 
-    luaX_setinput(L, &ls, z, luaS_new(L, name));
+    ls.setinput(L, z, luaS_new(L, name));
     open_func(&ls, &fs);
-    luaX_next(&ls);
+    ls.nexttoken();
     chunk(&ls);
     close_func(&ls);
 
@@ -139,8 +139,8 @@ static void body(LexState* ls, expdesc* e, int needself, int line) {
     /* body ->  `(' parlist `)' chunk END */
     FuncState new_fs;
     open_func(ls, &new_fs);
-    luaX_next(ls); // read '('
-    luaX_next(ls); // read ')'
+    ls->nexttoken(); // read '('
+    ls->nexttoken(); // read ')'
     chunk(ls);
     check_match(ls, TK_END);
     close_func(ls);
@@ -166,7 +166,7 @@ static void funcargs(LexState* ls, expdesc* f) {
 
     switch (ls->t.token) {
     case '(': {
-        luaX_next(ls);
+        ls->nexttoken();
         if (ls->t.token == ')')  /* arg list is empty? */
             args.k = VVOID;
         else
@@ -229,7 +229,7 @@ static void simpleexp(LexState* ls, expdesc* v) {
         primaryexp(ls, v);
         return;
     }
-    luaX_next(ls);
+    ls->nexttoken();
 }
 
 /*
@@ -254,7 +254,7 @@ static void expr(LexState* ls, expdesc* v) {
 static void assignment(LexState* ls, expdesc* lh, int nvars) {
     expdesc e;
     int nexps = 0;
-    luaX_next(ls);
+    ls->nexttoken();
     nexps = explist1(ls, &e);
     luaK_storevar(ls->fs, lh, &e);
 }
@@ -269,7 +269,7 @@ static void funcstat(LexState* ls, int line) {
     /* funcstat -> FUNCTION funcname body */
     int needself;
     expdesc v, b;
-    luaX_next(ls);  /* skip FUNCTION */
+    ls->nexttoken();  /* skip FUNCTION */
     needself = funcname(ls, &v);
     body(ls, &b, needself, line);
     luaK_storevar(ls->fs, &v, &b);
