@@ -7,7 +7,7 @@
 
 // 给FuncState记录一个新增变量
 static int addk(FuncState* fs, TValue* k, TValue* v) {
-    TValue* idx = luaH_set(fs->L, fs->h, k);
+    TValue* idx = fs->h->set(fs->L, k);
     
     int nk = (int)fs->f->k.size();
     setnvalue(idx, nk);

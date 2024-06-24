@@ -57,7 +57,7 @@ void luaX_init(lua_State* L) {
 TString* luaX_newstring(LexState* ls, const char* str, size_t l) {
     lua_State* L = ls->L;
     TString* ts = luaS_newlstr(L, str, l);
-    TValue* o = luaH_setstr(L, ls->fs->h, ts);
+    TValue* o = ls->fs->h->setstr(L, ts);
     setbvalue(o, true);
     return ts;
 }

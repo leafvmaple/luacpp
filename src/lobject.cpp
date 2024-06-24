@@ -7,20 +7,17 @@ void setnilvalue(TValue* obj _IMPL) {
 }
 
 void setnvalue(TValue* obj, const lua_Number n _IMPL) {
-    obj->value.n = n;
-    obj->tt = LUA_TNUMBER;
+    obj->setvalue(n);
     SET_DEBUG_NAME(obj, debug);
 }
 
 void setpvalue(TValue* obj, void* p _IMPL) {
-    obj->value.p = p;
-    obj->tt = LUA_TLIGHTUSERDATA;
+    obj->setvalue(p);
     SET_DEBUG_NAME(obj, debug);
 }
 
 void setbvalue(TValue* obj, const bool b _IMPL) {
-    obj->value.b = b;
-    obj->tt = LUA_TBOOLEAN;
+    obj->setvalue(b);
     SET_DEBUG_NAME(obj, debug);
 }
 

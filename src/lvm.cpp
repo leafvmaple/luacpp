@@ -30,12 +30,12 @@ int luaV_tostring(lua_State* L, TValue* obj) {
 
 void luaV_gettable(lua_State* L, const TValue* t, TValue* key, TValue* val) {
     Table* h = (Table*)t->value.gc;
-    const TValue* res = luaH_get(h, key);
+    const TValue* res = h->get(key);
     setobj(val, res);
 }
 
 void luaV_settable(lua_State* L, const TValue* t, TValue* key, TValue* val) {
-    TValue* oldval = luaH_set(L, (Table*)t->value.gc, key);
+    TValue* oldval = ((Table*)t->value.gc)->set(L, key);
     setobj(oldval, val);
 }
 

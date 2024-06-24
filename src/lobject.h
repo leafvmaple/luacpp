@@ -98,18 +98,6 @@ union Value {
     int b;
 };
 
-// Value With Type
-struct TValue {
-#ifdef _DEBUG
-    std::string name;
-#endif
-    Value value;
-    TVALUE_TYPE tt = LUA_TNIL;
-
-    ~TValue() {}
-
-    bool operator==(const TValue& k) const;
-};
 
 #ifdef _DEBUG
 #define SET_DEBUG_NAME(t, s) if (s) {(((t)->name) = (s));}
@@ -118,6 +106,44 @@ struct TValue {
 #define SET_DEBUG_NAME(t, s)
 #define COPY_DEBUG_NAME(d, s)
 #endif
+
+// Value With Type
+struct TValue {
+#ifdef _DEBUG
+    std::string name;
+#endif
+    Value value;
+    TVALUE_TYPE tt = LUA_TNIL;
+
+    void setvalue(const lua_Number n) {
+        tt = LUA_TNUMBER;
+        value.n = n;
+    }
+    void setvalue(void* p) {
+        tt = LUA_TLIGHTUSERDATA;
+        value.p = p;
+    }
+    void setvalue(const bool b) {
+        tt = LUA_TBOOLEAN;
+        value.b = b;
+    }
+    template<typename T>
+    void setvalue(const T* x) {
+        tt = TVALUE_TYPE(T::t);
+        value.gc = const_cast<T*>(x);
+    }
+
+    TValue() {}
+    TValue(lua_Number n) { setvalue(n); }
+    TValue(void* p) { setvalue(p); }
+    TValue(const bool b) { setvalue(b); }
+    template<typename T>
+    TValue(const T* x) { setvalue(x); }
+
+    ~TValue() {}
+
+    bool operator==(const TValue& k) const;
+};
 
 struct TString: GCheader {
     RESERVED     reserved = TK_NONE;      // 字符串为系统保留标识符时，这里不为0
@@ -154,15 +180,20 @@ struct KeyFunction {
     }
 };
 
-
 struct Table : GCheader {
     Table* metatable = nullptr;
     std::vector<TValue> array;
     std::unordered_map<const TValue, TValue, KeyFunction> node;
 
     enum { t = LUA_TTABLE };
-};
 
+    TValue* setstr(lua_State* L, const TString* key);
+    TValue* set(lua_State* L, const TValue* key);
+
+    const TValue* getnum(int key);
+    const TValue* getstr(const TString* key);
+    const TValue* get(const TValue* key);
+};
 
 struct Closure : GCheader {
     lu_byte   isC     = false;
@@ -234,8 +265,7 @@ const TValue luaO_nilobject_;
 
 template<typename T>
 void setgcvalue(TValue* obj, const T* x _DECL) {
-    obj->tt = TVALUE_TYPE(T::t);
-    obj->value.gc = const_cast<T*>(x);
+    obj->setvalue(x);
     SET_DEBUG_NAME(obj, debug);
 }
 
