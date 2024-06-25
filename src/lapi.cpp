@@ -63,7 +63,7 @@ void lua_pushstring(lua_State* L, const char* s _IMPL) {
 }
 
 void lua_pushvalue(lua_State* L, int idx) {
-    setobj(L->top++, index2adr(L, idx));
+    L->top++->setobj(index2adr(L, idx));
 }
 
 void lua_pushcclosure(lua_State* L, lua_CFunction fn, int n _IMPL) {
@@ -73,7 +73,7 @@ void lua_pushcclosure(lua_State* L, lua_CFunction fn, int n _IMPL) {
     cl->f = fn;
     L->top -= n;
     while (n--)
-        setobj(&cl->upvalue[n], L->top + n);
+        cl->upvalue[n].setobj(L->top + n);
     setgcvalue(L->top, cl, debug);
     L->top++;
 }
@@ -143,7 +143,7 @@ void lua_pop(lua_State* L, int n) {
 
 void lua_remove(lua_State* L, int idx) {
     TValue* p = index2adr(L, idx);
-    while (++p < L->top) setobj(p - 1, p);
+    while (++p < L->top) (p - 1)->setobj(p);
     L->top--;
 }
 

@@ -62,7 +62,7 @@ int luaD_poscall(lua_State* L, TValue* firstResult) {
     L->savedpc = L->ci->savedpc;
 
     for (int i = ci->nresults; i != 0 && firstResult < L->top; i--)
-        setobj(res++, firstResult++);
+        res++->setobj(firstResult++);
     L->top = res;
     return 0;
 }

@@ -31,12 +31,12 @@ int luaV_tostring(lua_State* L, TValue* obj) {
 void luaV_gettable(lua_State* L, const TValue* t, TValue* key, TValue* val) {
     Table* h = (Table*)t->value.gc;
     const TValue* res = h->get(key);
-    setobj(val, res);
+    val->setobj(res);
 }
 
 void luaV_settable(lua_State* L, const TValue* t, TValue* key, TValue* val) {
     TValue* oldval = ((Table*)t->value.gc)->set(L, key);
-    setobj(oldval, val);
+    oldval->setobj(val);
 }
 
 void luaV_execute(lua_State* L, int nexeccalls) {
@@ -58,7 +58,7 @@ void luaV_execute(lua_State* L, int nexeccalls) {
         {
         // Load Const
         case OP_LOADK: {
-            setobj(ra, KBx(k, i));
+            ra->setobj(KBx(k, i));
             continue;
         }
         case OP_GETGLOBAL: {

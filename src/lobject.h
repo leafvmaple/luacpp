@@ -101,10 +101,8 @@ union Value {
 
 #ifdef _DEBUG
 #define _SET_DEBUG_NAME if (debug) {((this->name) = (debug));}
-#define COPY_DEBUG_NAME(d, s) (((d)->name) = (s)->name)
 #else
-#define SET_DEBUG_NAME
-#define COPY_DEBUG_NAME(d, s)
+#define _SET_DEBUG_NAME
 #endif
 
 // Value With Type
@@ -138,6 +136,10 @@ struct TValue {
     void setvalue(const T* x, _NAME) { _SET_DEBUG_NAME
         tt = TVALUE_TYPE(T::t);
         value.gc = const_cast<T*>(x);
+    }
+
+    void setobj(const TValue* src) {
+        *this = *src;
     }
 
     TValue() {}
@@ -257,8 +259,6 @@ inline bool ttisnumber(TValue* obj) {
 inline bool ttisstring(TValue* obj) {
     return obj->tt == LUA_TSTRING;
 }
-
-void setobj(TValue* desc, const TValue* src);
 
 const TValue luaO_nilobject_;
 #define luaO_nilobject (&luaO_nilobject_)
