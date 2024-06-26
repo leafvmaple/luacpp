@@ -31,12 +31,12 @@ int luaV_tostring(lua_State* L, TValue* obj) {
 void luaV_gettable(lua_State* L, const TValue* t, TValue* key, TValue* val) {
     Table* h = (Table*)t->value.gc;
     const TValue* res = h->get(key);
-    val->setobj(res);
+    *val = *res;
 }
 
 void luaV_settable(lua_State* L, const TValue* t, TValue* key, TValue* val) {
     TValue* oldval = ((Table*)t->value.gc)->set(L, key);
-    oldval->setobj(val);
+    *oldval = *val;
 }
 
 void luaV_execute(lua_State* L, int nexeccalls) {
@@ -58,14 +58,12 @@ void luaV_execute(lua_State* L, int nexeccalls) {
         {
         // Load Const
         case OP_LOADK: {
-            ra->setobj(KBx(k, i));
+            *ra = *KBx(k, i);
             continue;
         }
-        case OP_GETGLOBAL: {
-            TValue g;
-            TValue* rb = KBx(k, i);
-            setgcvalue(&g, cl->env);
-            luaV_gettable(L, &g, rb, ra);
+        case OP_GETGLOBAL: { // ²»Ê¹ÓÃra
+            TValue g(cl->env);
+            luaV_gettable(L, &g, KBx(k, i), ra);
             continue;
         }
         case OP_RETURN: {
@@ -81,12 +79,12 @@ void luaV_execute(lua_State* L, int nexeccalls) {
             int b = GETARG_B(i);
             if (b != 0) L->top = ra + b;
             L->savedpc = pc;
-            luaD_precall(L, ra, 0);
+            Closure* c = static_cast<Closure*>(ra->value.gc);
+            c->precall(L, ra, 0);
             continue;
         }
         case OP_SETGLOBAL: {
-            TValue g;
-            setgcvalue(&g, cl->env);
+            TValue g(cl->env);
             luaV_settable(L, &g, KBx(k, i), ra);
             continue;
         }

@@ -143,11 +143,11 @@ struct TValue {
     }
 
     TValue() {}
-    TValue(lua_Number n) { setvalue(n); }
-    TValue(void* p) { setvalue(p); }
-    TValue(const bool b) { setvalue(b); }
+    explicit TValue(lua_Number n) { setvalue(n); }
+    explicit TValue(void* p) { setvalue(p); }
+    explicit TValue(const bool b) { setvalue(b); }
     template<typename T>
-    TValue(const T* x) { setvalue(x); }
+    explicit TValue(const T* x) { setvalue(x); }
 
     ~TValue() {}
 
@@ -217,6 +217,8 @@ struct Closure : GCheader {
     Table*    env     = nullptr;
 
     enum { t = LUA_TFUNCTION };
+
+    virtual int precall(lua_State* L, TValue* func, int nresults) = 0;
 };
 
 struct UpVal : GCheader {
@@ -250,6 +252,8 @@ struct CClosure : Closure {
     std::vector<TValue> upvalue;
 
     CClosure(lua_State* L, int nelems, Table* e);
+
+    virtual int precall(lua_State* L, TValue* func, int nresults);
 };
 
 // Lua函数的指令和数据需要自行管理，因此需要一个Proto来存储
@@ -258,6 +262,8 @@ struct LClosure : Closure {
     std::vector<UpVal*> upvals;
 
     LClosure(lua_State* L, int nelems, Table* e);
+
+    virtual int precall(lua_State* L, TValue* func, int nresults);
 };
 
 inline bool ttisnumber(TValue* obj) {

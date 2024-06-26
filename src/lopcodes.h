@@ -8,7 +8,6 @@
 inline OpCode GET_OPCODE(const Instruction& i) {
     return i.op;
 }
-
 inline int GETARG_A(const Instruction& i) {
     return i.a;
 }

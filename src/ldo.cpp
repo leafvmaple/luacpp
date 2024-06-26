@@ -6,47 +6,47 @@
 
 // | ci->func | ci->base | ... |        | LUA_MINSTACK - 1 .. | ci->top |
 // |          | L->base  | ... | L->top |
-int luaD_precall(lua_State* L, TValue* func, int nresults) {
-    Closure* cl = nullptr;
+int LClosure::precall(lua_State* L, TValue* func, int nresults) {
     CallInfo* ci = nullptr;
-    int n = 0;
 
-    cl = static_cast<CClosure*>(func->value.gc);
     L->ci->savedpc = L->savedpc;
-    if (!cl->isC) {
-        LClosure* l = static_cast<LClosure*>(cl);
-        ci = ++L->ci;
-        ci->func = func;
-        ci->base = ci->func + 1;
-        // TODO
-        ci->top = L->top + LUA_MINSTACK;
 
-        L->base = ci->base;
-        L->top = ci->top;
-        L->savedpc = &l->p->code.front();
+    ci = ++L->ci;
+    ci->func = func;
+    ci->base = ci->func + 1;
+    // TODO
+    ci->top = L->top + LUA_MINSTACK;
 
-        return PCRLUA;
-    }
-    else {
-        int n = 0;
-        CClosure* c = static_cast<CClosure*>(cl);
-        ci = ++L->ci;
-        ci->func = func;
-        ci->base = ci->func + 1;
-        ci->top = L->top + LUA_MINSTACK;
-        ci->nresults = nresults;
+    L->base = ci->base;
+    L->top = ci->top;
+    L->savedpc = &p->code.front();
 
-        L->base = ci->base;
-        n = c->f(L);
-        luaD_poscall(L, L->top - n);
+    return PCRLUA;
+}
 
-        return PCRC;
-    }
+int CClosure::precall(lua_State* L, TValue* func, int nresults) {
+    int n = 0;
+    CallInfo* ci = nullptr;
+
+    L->ci->savedpc = L->savedpc;
+
+    ci = ++L->ci;
+    ci->func = func;
+    ci->base = ci->func + 1;
+    ci->top = L->top + LUA_MINSTACK;
+    ci->nresults = nresults;
+
+    L->base = ci->base;
+    n = f(L);
+    luaD_poscall(L, L->top - n);
+
+    return PCRC;
 }
 
 void luaD_call(lua_State* L, TValue* func, int nResults) {
     ++L->nCcalls;
-    if (luaD_precall(L, func, nResults) == PCRLUA)
+    Closure* c = static_cast<Closure*>(func->value.gc);
+    if (c->precall(L, func, nResults) == PCRLUA)
         luaV_execute(L, 1);
 
     L->nCcalls--;
