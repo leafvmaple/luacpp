@@ -40,7 +40,7 @@ void f_luaopen(lua_State* L) {
     gt(L)->setvalue(new Table(L, 0, 2));
     registry(L)->setvalue(new Table(L, 0, 2));
 
-    luaS_resize(L, MINSTRTABSIZE);
+    strtab(L)->resize(MINSTRTABSIZE);
 
     luaT_init(L);
     luaX_init(L);

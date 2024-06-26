@@ -86,7 +86,7 @@ static void pushclosure(LexState* ls, FuncState* func, expdesc* v) {
 
 static void open_func(LexState* ls, FuncState* fs) {
     lua_State* L = ls->L;
-    fs->f = luaF_newproto(L);
+    fs->f = new Proto(L);
     fs->h = new Table(L, 0, 0);
     fs->prev = ls->fs;
     fs->ls = ls;
@@ -114,7 +114,7 @@ Proto* luaY_parser(lua_State* L, ZIO* z, const char* name) {
     LexState ls;
     FuncState fs;
 
-    ls.setinput(L, z, luaS_new(L, name));
+    ls.setinput(L, z, strtab(L)->newstr(L, name));
     open_func(&ls, &fs);
     ls.nexttoken();
     chunk(&ls);

@@ -2,30 +2,26 @@
 #include "lstate.h"
 #include "lgc.h"
 
-void luaS_resize(lua_State* L, int newsize) {
-    G(L)->strt.hash.reserve(newsize);
+TString::TString(lua_State* L, const char* str, size_t l) {
+    hash = 0;
+    luaC_white(marked, G(L));
+    s = std::string(str, l);
 }
 
-TString* newlstr(lua_State* L, const char* str, size_t l) {
-    TString* ts = nullptr;
-    stringtable* tb = nullptr;
-
-    ts = new TString;
-    ts->hash = 0;
-    luaC_white(ts->marked, G(L));
-    ts->s = std::string(str, l);
-
-    tb = &G(L)->strt;
-    tb->hash[ts->s] = ts;
-    tb->nuse++;
-
-    return ts;
+void stringtable::resize(int newsize) {
+    hash.reserve(newsize);
 }
 
-TString* luaS_newlstr(lua_State* L, const char* str, size_t l) {
-    GCheader* o = G(L)->strt.hash[str];
-    if (o) {
-        return static_cast<TString*>(o);
+TString* stringtable::newstr(lua_State* L, const char* s) {
+    return newlstr(L, s, strlen(s));
+}
+
+TString* stringtable::newlstr(lua_State* L, const char* str, size_t l) {
+    GCheader* o = hash[str];
+    if (!o) {
+        o = new TString(L, str, l);
+        hash[str] = o;
+        nuse++;
     }
-    return newlstr(L, str, l);
+    return static_cast<TString*>(o);
 }

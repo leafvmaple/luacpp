@@ -24,7 +24,7 @@ int luaV_tostring(lua_State* L, TValue* obj) {
     char s[LUAI_MAXNUMBER2STR];
     lua_Number n = obj->value.n;
     lua_number2str(s, n);
-    setgcvalue(obj, luaS_new(L, s), s);
+    obj->setvalue(strtab(L)->newstr(L, s), s);
     return 1;
 }
 

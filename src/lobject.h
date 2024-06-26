@@ -161,7 +161,12 @@ struct TString: GCheader {
 
     enum { t = LUA_TSTRING };
 
-    TString() { tt = LUA_TSTRING; }
+    TString(lua_State* L, const char* str, size_t l);
+
+    // 设置不会GC
+    void fix() {
+        marked.set(FIXEDBIT);
+    }
 };
 
 inline size_t keyhash(const TValue& k) {
@@ -235,6 +240,8 @@ struct Proto : GCheader {
     std::vector<Proto*>      p;            /* 函数内嵌套函数 */
 
     enum { t = LUA_TPROTO };
+
+    Proto(lua_State* L);
 };
 
 // C函数中的指令和数据都在代码段数据段中，只需要一个函数指针入口即可
@@ -242,7 +249,7 @@ struct CClosure : Closure {
     lua_CFunction       f = nullptr;    // 函数指针
     std::vector<TValue> upvalue;
 
-    CClosure() { isC = true; }
+    CClosure(lua_State* L, int nelems, Table* e);
 };
 
 // Lua函数的指令和数据需要自行管理，因此需要一个Proto来存储
@@ -250,7 +257,7 @@ struct LClosure : Closure {
     Proto*              p = nullptr;    // 函数原型
     std::vector<UpVal*> upvals;
 
-    LClosure() { isC = false; }
+    LClosure(lua_State* L, int nelems, Table* e);
 };
 
 inline bool ttisnumber(TValue* obj) {

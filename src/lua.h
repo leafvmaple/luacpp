@@ -31,7 +31,7 @@ enum TVALUE_TYPE {
 #define LUA_GLOBALSINDEX	(-10002)
 
 #define _NAME char const* debug = nullptr
-#define _IMPL , char const* debug
+#define _IMPL char const* debug
 
 typedef std::function<int(lua_State*)> lua_CFunction;
 typedef const char* (*lua_Reader) (lua_State* L, void* ud, size_t* sz);

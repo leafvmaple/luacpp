@@ -49,15 +49,14 @@ const char* const luaX_tokens[] = {
 // 初始化语法关键字
 void luaX_init(lua_State* L) {
     for (int i = 0; i < NUM_RESERVED; i++) {
-        TString* ts = luaS_new(L, luaX_tokens[i]);
-        luaS_fix(ts);
+        TString* ts = strtab(L)->newstr(L, luaX_tokens[i]);
+        ts->fix();
         ts->reserved = (RESERVED)(i + FIRST_RESERVED);
     }
 }
 
 TString* LexState::newstring(const char* str, size_t l) {
-    lua_State* L = this->L;
-    TString* ts = luaS_newlstr(L, str, l);
+    TString* ts = strtab(L)->newlstr(L, str, l);
     TValue* o = fs->h->setstr(L, ts);
     o->setvalue(true);
     return ts;

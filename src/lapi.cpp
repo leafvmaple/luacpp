@@ -15,13 +15,17 @@ TValue* index2adr(lua_State* L, int idx) {
         return L->top + idx;
     }
     else switch (idx) {  /* pseudo-indices */
-    case LUA_REGISTRYINDEX: return registry(L);
+    case LUA_REGISTRYINDEX: {
+        return registry(L);
+    }
     case LUA_ENVIRONINDEX: {
         Closure* func = static_cast<Closure*>(L->ci->func->value.gc);
-        setgcvalue(&L->env, func->env);
+        L->env.setvalue(func->env);
         return &L->env;
     }
-    case LUA_GLOBALSINDEX: return gt(L);
+    case LUA_GLOBALSINDEX: {
+        return gt(L);
+    }
     default: {
         return nullptr;
     }
@@ -38,24 +42,22 @@ Table* getcurrenv(lua_State* L) {
 // |         |           |
 // | Closure | UsderData | L->top
 static void f_Ccall(lua_State* L, CCallS* c) {
-    CClosure* cl;
-    cl = luaF_newCclosure(L, 0, getcurrenv(L));
+    CClosure* cl = new CClosure(L, 0, getcurrenv(L));
     cl->f = c->func;
-    setgcvalue(L->top++, cl, "#[f_Ccall] CClosure#");
+    L->top++->setvalue(cl, "#[f_Ccall] CClosure#");
     L->top++->setvalue(c->ud, "#[f_Ccall] ud#");
-    luaD_call(L, L->top - 2, 0);
+    luaD_call(L, L->top - 2, 0); // Ö¸Ïòcl
 }
 
 void lua_pushnil(lua_State* L) {
-    L->top->setnil();
-    L->top++;
+    L->top++->setnil();
 }
 
-void lua_pushlstring(lua_State* L, const char* s, size_t l _IMPL) {
-    setgcvalue(L->top++, luaS_newlstr(L, s, l), debug ? debug : s);
+void lua_pushlstring(lua_State* L, const char* s, size_t l, _IMPL) {
+    L->top++->setvalue(strtab(L)->newlstr(L, s, l), debug ? debug : s);
 }
 
-void lua_pushstring(lua_State* L, const char* s _IMPL) {
+void lua_pushstring(lua_State* L, const char* s, _IMPL) {
     if (s == nullptr)
         lua_pushnil(L);
     else
@@ -66,19 +68,16 @@ void lua_pushvalue(lua_State* L, int idx) {
     L->top++->setobj(index2adr(L, idx));
 }
 
-void lua_pushcclosure(lua_State* L, lua_CFunction fn, int n _IMPL) {
-    CClosure* cl;
-
-    cl = luaF_newCclosure(L, n, getcurrenv(L));
+void lua_pushcclosure(lua_State* L, lua_CFunction fn, int n, _IMPL) {
+    CClosure* cl = new CClosure(L, n, getcurrenv(L));
     cl->f = fn;
     L->top -= n;
     while (n--)
-        cl->upvalue[n].setobj(L->top + n);
-    setgcvalue(L->top, cl, debug);
-    L->top++;
+        cl->upvalue[n] = *(L->top + n);
+    L->top++->setvalue(cl, debug);
 }
 
-void lua_pushcfunction(lua_State* L, lua_CFunction f _IMPL) {
+void lua_pushcfunction(lua_State* L, lua_CFunction f, _IMPL) {
     lua_pushcclosure(L, f, 0, debug);
 }
 
@@ -90,14 +89,14 @@ void lua_settable(lua_State* L, int idx) {
 
 void lua_setfield(lua_State* L, int idx, const char* k) {
     TValue key;
-    TValue* t = index2adr(L, idx);;
+    TValue* t = index2adr(L, idx);
 
-    setgcvalue(&key, luaS_new(L, k), k);
+    key.setvalue(strtab(L)->newstr(L, k), k);
     luaV_settable(L, t, &key, L->top - 1);
     L->top--;
 }
 
-void lua_createtable(lua_State* L, int narr, int nrec _IMPL) {
+void lua_createtable(lua_State* L, int narr, int nrec, _IMPL) {
     L->top++->setvalue(new Table(L, narr, nrec), debug);
 }
 
@@ -120,7 +119,8 @@ void lua_gettable(lua_State* L, int idx) {
 void lua_getfield(lua_State* L, int idx, const char* k) {
     TValue key;
     TValue* t = index2adr(L, idx);
-    setgcvalue(&key, luaS_new(L, k));
+
+    key.setvalue(strtab(L)->newstr(L, k));
     luaV_gettable(L, t, &key, L->top);
     L->top++;
 }

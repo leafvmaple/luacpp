@@ -28,6 +28,10 @@ struct stringtable {
     // TODO
     std::unordered_map<std::string, GCheader*> hash;
     lu_int32                                   nuse = 0;
+
+    void resize(int newsize);
+    TString* newstr(lua_State* L, const char* str);
+    TString* newlstr(lua_State* L, const char* str, size_t l);
 };
 
 struct global_State
@@ -74,6 +78,10 @@ inline global_State* &G(lua_State* L) {
 
 inline TValue* registry(lua_State* L) {
     return &G(L)->l_registry;
+}
+
+inline stringtable* strtab(lua_State* L) {
+    return &G(L)->strt;
 }
 
 void f_luaopen(lua_State* L);

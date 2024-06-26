@@ -77,10 +77,9 @@ void f_parser(lua_State* L, SParser* p) {
     LClosure* cl = nullptr;
 
     tf = luaY_parser(L, p->z, p->name);
-    cl = luaF_newLclosure(L, 0, static_cast<Table*>(gt(L)->value.gc));
+    cl = new LClosure(L, 0, static_cast<Table*>(gt(L)->value.gc));
     cl->p = tf;
-    setgcvalue(L->top, cl);
-    L->top++;
+    L->top++->setvalue(cl);
 }
 
 int luaD_protectedparser(lua_State* L, ZIO* z, const char* name) {

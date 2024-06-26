@@ -1,27 +1,22 @@
 #include "lfunc.h"
 #include "lgc.h"
 
-Proto* luaF_newproto(lua_State* L) {
-    Proto* p = new Proto;
-    luaC_link(L, p, LUA_TPROTO);
-
-    return p;
+Proto::Proto(lua_State* L) {
+    luaC_link(L, this, LUA_TPROTO);
 }
 
-CClosure* luaF_newCclosure(lua_State* L, int nelems, Table* e) {
-    CClosure* c = new CClosure;
-    c->upvalue.resize(nelems);
-    luaC_link(L, c, LUA_TFUNCTION);
-    c->env = e;
+CClosure::CClosure(lua_State* L, int nelems, Table* e) {
+    upvalue.resize(nelems);
+    luaC_link(L, this, LUA_TFUNCTION);
+    env = e;
 
-    return c;
+    isC = true;
 }
 
-LClosure* luaF_newLclosure(lua_State* L, int nelems, Table* e) {
-    LClosure* l = new LClosure;
-    l->upvals.resize(nelems);
-    luaC_link(L, l, LUA_TFUNCTION);
-    l->env = e;
+LClosure::LClosure(lua_State* L, int nelems, Table* e) {
+    upvals.resize(nelems);
+    luaC_link(L, this, LUA_TFUNCTION);
+    env = e;
 
-    return l;
+    isC = false;
 }
