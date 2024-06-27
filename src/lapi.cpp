@@ -44,8 +44,8 @@ Table* getcurrenv(lua_State* L) {
 static void f_Ccall(lua_State* L, CCallS* c) {
     CClosure* cl = new CClosure(L, 0, getcurrenv(L));
     cl->f = c->func;
-    L->top++->setvalue(cl, "#[f_Ccall] CClosure#");
-    L->top++->setvalue(c->ud, "#[f_Ccall] ud#");
+    L->top++->setvalue(cl, "#[Call] CClosure#");
+    L->top++->setvalue(c->ud, "#[Call] UsderData#");
     luaD_call(L, L->top - 2, 0); // Ö¸Ïòcl
 }
 
@@ -65,7 +65,7 @@ void lua_pushstring(lua_State* L, const char* s, _IMPL) {
 }
 
 void lua_pushvalue(lua_State* L, int idx) {
-    L->top++->setobj(index2adr(L, idx));
+    *L->top++ = *index2adr(L, idx);
 }
 
 void lua_pushcclosure(lua_State* L, lua_CFunction fn, int n, _IMPL) {
@@ -83,15 +83,13 @@ void lua_pushcfunction(lua_State* L, lua_CFunction f, _IMPL) {
 
 void lua_settable(lua_State* L, int idx) {
     TValue* t = index2adr(L, idx);
-    luaV_settable(L, t, L->top - 2, L->top - 2);
+    luaV_settable(L, t, L->top - 2, L->top - 1);
     L->top -= 2;
 }
 
 void lua_setfield(lua_State* L, int idx, const char* k) {
-    TValue key;
+    TValue key(strtab(L)->newstr(L, k), k);
     TValue* t = index2adr(L, idx);
-
-    key.setvalue(strtab(L)->newstr(L, k), k);
     luaV_settable(L, t, &key, L->top - 1);
     L->top--;
 }
@@ -117,10 +115,8 @@ void lua_gettable(lua_State* L, int idx) {
 }
 
 void lua_getfield(lua_State* L, int idx, const char* k) {
-    TValue key;
+    TValue key(strtab(L)->newstr(L, k));
     TValue* t = index2adr(L, idx);
-
-    key.setvalue(strtab(L)->newstr(L, k));
     luaV_gettable(L, t, &key, L->top);
     L->top++;
 }
@@ -143,7 +139,7 @@ void lua_pop(lua_State* L, int n) {
 
 void lua_remove(lua_State* L, int idx) {
     TValue* p = index2adr(L, idx);
-    while (++p < L->top) (p - 1)->setobj(p);
+    while (++p < L->top) *(p - 1) = *p;
     L->top--;
 }
 
@@ -185,9 +181,8 @@ int lua_load(lua_State* L, lua_Reader reader, void* data, const char* chunkname)
 
 const char* lua_tolstring(lua_State* L, int idx, size_t* len){
     TValue* o = index2adr(L, idx);
-    if (!ttisstring(o)) {
+    if (!ttisstring(o))
         luaV_tostring(L, o);
-    }
     TString* ts = static_cast<TString*>(o->value.gc);
     if (len)
         *len = ts->s.size();

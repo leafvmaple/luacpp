@@ -39,7 +39,6 @@ void f_luaopen(lua_State* L) {
 
     gt(L)->setvalue(new Table(L, 0, 2));
     registry(L)->setvalue(new Table(L, 0, 2));
-
     strtab(L)->resize(MINSTRTABSIZE);
 
     luaT_init(L);

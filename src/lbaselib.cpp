@@ -22,8 +22,7 @@ static int luaB_tostring(lua_State* L) {
 static int luaB_print(lua_State* L) {
     int n = lua_gettop(L);  /* number of arguments */
     for (int i = 1; i <= n; i++) {
-        const char* s = nullptr;
-        s = lua_tostring(L, -1);  /* get result */
+        const char* s = lua_tostring(L, -1);  /* get result */
         if (i > 1) fputs("\t", stdout);
         fputs(s, stdout);
         lua_pop(L, 1);  /* pop result */

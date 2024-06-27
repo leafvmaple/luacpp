@@ -6,6 +6,7 @@
 
 // | ci->func | ci->base | ... |        | LUA_MINSTACK - 1 .. | ci->top |
 // |          | L->base  | ... | L->top |
+// 准备L->ci
 int LClosure::precall(lua_State* L, TValue* func, int nresults) {
     CallInfo* ci = nullptr;
 
@@ -19,11 +20,14 @@ int LClosure::precall(lua_State* L, TValue* func, int nresults) {
 
     L->base = ci->base;
     L->top = ci->top;
-    L->savedpc = &p->code.front();
+    L->savedpc = p->code.data();
+
+    execute(L, 1);
 
     return PCRLUA;
 }
 
+// 准备L->ci
 int CClosure::precall(lua_State* L, TValue* func, int nresults) {
     int n = 0;
     CallInfo* ci = nullptr;
@@ -46,8 +50,7 @@ int CClosure::precall(lua_State* L, TValue* func, int nresults) {
 void luaD_call(lua_State* L, TValue* func, int nResults) {
     ++L->nCcalls;
     Closure* c = static_cast<Closure*>(func->value.gc);
-    if (c->precall(L, func, nResults) == PCRLUA)
-        luaV_execute(L, 1);
+    c->precall(L, func, nResults);
 
     L->nCcalls--;
 }
@@ -62,7 +65,7 @@ int luaD_poscall(lua_State* L, TValue* firstResult) {
     L->savedpc = L->ci->savedpc;
 
     for (int i = ci->nresults; i != 0 && firstResult < L->top; i--)
-        res++->setobj(firstResult++);
+        *res++ = *firstResult++;
     L->top = res;
     return 0;
 }

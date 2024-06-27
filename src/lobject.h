@@ -143,11 +143,11 @@ struct TValue {
     }
 
     TValue() {}
-    explicit TValue(lua_Number n) { setvalue(n); }
-    explicit TValue(void* p) { setvalue(p); }
-    explicit TValue(const bool b) { setvalue(b); }
+    explicit TValue(lua_Number n, _NAME) { setvalue(n, debug); }
+    explicit TValue(void* p, _NAME) { setvalue(p, debug); }
+    explicit TValue(const bool b, _NAME) { setvalue(b, debug); }
     template<typename T>
-    explicit TValue(const T* x) { setvalue(x); }
+    explicit TValue(const T* x, _NAME) { setvalue(x, debug); }
 
     ~TValue() {}
 
@@ -264,6 +264,7 @@ struct LClosure : Closure {
     LClosure(lua_State* L, int nelems, Table* e);
 
     virtual int precall(lua_State* L, TValue* func, int nresults);
+    void execute(lua_State* L, int nexeccalls);
 };
 
 inline bool ttisnumber(TValue* obj) {

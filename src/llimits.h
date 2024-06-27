@@ -82,7 +82,7 @@ struct Instruction {
             int b : 9;
             int c : 9;
         };
-        int bc : 18;
+        int bc : 18; // Bx
     };
 };
 

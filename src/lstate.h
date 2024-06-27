@@ -21,7 +21,7 @@ struct CallInfo
 
     int nresults = 0; // 这个函数调用接受多少个返回值
 
-    const Instruction* savedpc = nullptr;
+    const Instruction* savedpc = nullptr; // 保存上一个PC
 };
 
 struct stringtable {
