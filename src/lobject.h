@@ -139,9 +139,7 @@ struct TValue {
         value.gc = const_cast<T*>(x);
     }
 
-    void setobj(const TValue* src) {
-        *this = *src;
-    }
+    int tostring(lua_State* L);
 
     TValue() {}
     explicit TValue(lua_Number n, _NAME) { setvalue(n, debug); }

@@ -6,12 +6,16 @@
 #include "luaconf.h"
 #include "lopcodes.h"
 
-int luaV_tostring(lua_State* L, TValue* obj) {
-    char s[LUAI_MAXNUMBER2STR];
-    lua_Number n = obj->value.n;
-    lua_number2str(s, n);
-    obj->setvalue(strtab(L)->newstr(L, s), s);
-    return 1;
+int TValue::tostring(lua_State* L) {
+    if (!ttisnumber(this))
+        return 0;
+    {
+        char s[LUAI_MAXNUMBER2STR];
+        lua_Number n = value.n;
+        lua_number2str(s, n);
+        setvalue(strtab(L)->newstr(L, s), s);
+        return 1;
+    }
 }
 
 // 执行虚拟机上的savedpc指令
@@ -49,7 +53,7 @@ void LClosure::execute(lua_State* L, int nexeccalls) {
             if (b != 0)
                 L->top = ra + b;
             L->savedpc = pc;
-            Closure* c = reinterpret_cast<Closure*>(ra);
+            Closure* c = static_cast<Closure*>(ra->value.gc);
             c->precall(L, ra, 0);
             continue;
         }

@@ -186,7 +186,7 @@ int lua_load(lua_State* L, lua_Reader reader, void* data, const char* chunkname)
 const char* lua_tolstring(lua_State* L, int idx, size_t* len){
     TValue* o = index2adr(L, idx);
     if (!ttisstring(o))
-        luaV_tostring(L, o);
+        o->tostring(L);
     TString* ts = static_cast<TString*>(o->value.gc);
     if (len)
         *len = ts->s.size();
