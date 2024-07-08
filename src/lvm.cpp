@@ -14,17 +14,7 @@ int luaV_tostring(lua_State* L, TValue* obj) {
     return 1;
 }
 
-void luaV_gettable(lua_State* L, const TValue* t, TValue* key, TValue* val) {
-    Table* h = (Table*)t->value.gc;
-    const TValue* res = h->get(key);
-    *val = *res;
-}
-
-void luaV_settable(lua_State* L, const TValue* t, TValue* key, TValue* val) {
-    TValue* oldval = ((Table*)t->value.gc)->set(L, key);
-    *oldval = *val;
-}
-
+// 执行虚拟机上的savedpc指令
 void LClosure::execute(lua_State* L, int nexeccalls) {
     const Instruction* pc = L->savedpc;
     auto& k = p->k;
@@ -41,8 +31,7 @@ void LClosure::execute(lua_State* L, int nexeccalls) {
             continue;
         }
         case OP_GETGLOBAL: {
-            TValue g(env);
-            luaV_gettable(L, &g, &k[i.bc], ra);
+            *ra = (*env)[&k[i.bc]];
             continue;
         }
         case OP_RETURN: {
@@ -60,13 +49,12 @@ void LClosure::execute(lua_State* L, int nexeccalls) {
             if (b != 0)
                 L->top = ra + b;
             L->savedpc = pc;
-            Closure* c = static_cast<Closure*>(ra->value.gc);
+            Closure* c = reinterpret_cast<Closure*>(ra);
             c->precall(L, ra, 0);
             continue;
         }
         case OP_SETGLOBAL: {
-            TValue g(env);
-            luaV_settable(L, &g, &k[i.bc], ra);
+            (*env)[&k[i.bc]] = *ra;
             continue;
         }
         default:

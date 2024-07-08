@@ -9,35 +9,38 @@
 /*
 ** prototypes for recursive non-terminal functions
 */
-static void chunk(LexState* ls);
-static void expr(LexState* ls, expdesc* v);
 
 // 获取Token是否等于c，是则获取下一个Token并返回true
-static int testnext(LexState* ls, int c) {
-    if (ls->t.token == c) {
-        ls->nexttoken();
+int LexState::testnext(int c) {
+    if (t.token == c) {
+        nexttoken();
         return 1;
     }
     return 0;
 }
 
-static void check_match(LexState* ls, int what) {
-    testnext(ls, what);
+void LexState::checknext(int c) {
+    // check(c);
+    nexttoken();
 }
 
-static TString* str_checkname(LexState* ls) {
-    TString* ts = ls->t.seminfo.ts;
-    ls->nexttoken();
+void LexState::check_match(int what) {
+    testnext(what);
+}
+
+TString* LexState::str_checkname() {
+    TString* ts = t.seminfo.ts;
+    nexttoken();
     return ts;
 }
 
 static void init_exp(expdesc* e, expkind k, int i) {
     e->k = k;
-    e->u.s.info = i;
+    e->info = i;
 }
 
-static void codestring(LexState* ls, expdesc* e, TString* s) {
-    init_exp(e, VK, luaK_stringK(ls->fs, s));
+void LexState::codestring(expdesc* e, TString* s) {
+    init_exp(e, VK, fs->stringK(s));
 }
 
 static int singlevaraux(FuncState* fs, TString* n, expdesc* var, int base) {
@@ -49,10 +52,10 @@ static int singlevaraux(FuncState* fs, TString* n, expdesc* var, int base) {
         return VGLOBAL;
 }
 
-static void singlevar(LexState* ls, expdesc* var) {
-    TString* varname = str_checkname(ls);
-    if (singlevaraux(ls->fs, varname, var, 1) == VGLOBAL)
-        var->u.s.info = luaK_stringK(ls->fs, varname);
+void LexState::singlevar(expdesc* var) {
+    TString* varname = str_checkname();
+    if (singlevaraux(fs, varname, var, 1) == VGLOBAL)
+        var->info = fs->stringK(varname);
 }
 
 static BinOpr getbinopr(int op) {
@@ -76,51 +79,28 @@ static BinOpr getbinopr(int op) {
     }
 }
 
-static void pushclosure(LexState* ls, FuncState* func, expdesc* v) {
-    FuncState* fs = ls->fs;
+void LexState::pushclosure(FuncState* func, expdesc* v) {
     Proto* f = fs->f;
 
     f->p.emplace_back(func->f);
-    init_exp(v, VRELOCABLE, luaK_codeABx(fs, OP_CLOSURE, 0, 0));
+    init_exp(v, VRELOCABLE, fs->codeABx(OP_CLOSURE, 0, 0));
 }
 
-static void open_func(LexState* ls, FuncState* fs) {
-    lua_State* L = ls->L;
-    fs->f = new Proto(L);
-    fs->h = new Table(L, 0, 0);
-    fs->prev = ls->fs;
-    fs->ls = ls;
-    fs->L = ls->L;
-    ls->fs = fs;
+// 新增一层FuncState
+void LexState::openfunc(FuncState* fs) {
+    fs->prev = this->fs;
+    fs->ls = this;
+    this->fs = fs;
 
-    L->top++->setvalue(fs->h, "#[open_func] Const String#");
-    L->top++->setvalue(fs->f, "#[open_func] Proto#");
+    L->top++->setvalue(fs->h, "#[Open Function] Const String Table#");
+    L->top++->setvalue(fs->f, "#[Open Function] Proto#");
 }
 
-static void close_func(LexState* ls) {
-    lua_State* L = ls->L;
-    FuncState* fs = ls->fs;
-    Proto* f = fs->f;
-    luaK_ret(fs, 0, 0);  /* final return */
-    ls->fs = fs->prev;
+void LexState::closefunc() {
+    fs->ret(0, 0);  /* final return */
+    fs = fs->prev;
     L->top -= 2;  /* remove table and prototype from the stack */
     /* last token read was anchored in defunct function; must reanchor it */
-}
-
-static void chunk(LexState* ls);
-
-// 将文件解析为一个Proto
-Proto* luaY_parser(lua_State* L, ZIO* z, const char* name) {
-    LexState ls;
-    FuncState fs;
-
-    ls.setinput(L, z, strtab(L)->newstr(L, name));
-    open_func(&ls, &fs);
-    ls.nexttoken();
-    chunk(&ls);
-    close_func(&ls);
-
-    return fs.f;
 }
 
 // 是否为block结束
@@ -135,22 +115,45 @@ static bool block_follow(int token) {
     }
 }
 
-static void body(LexState* ls, expdesc* e, int needself, int line) {
-    /* body ->  `(' parlist `)' chunk END */
-    FuncState new_fs;
-    open_func(ls, &new_fs);
-    ls->nexttoken(); // read '('
-    ls->nexttoken(); // read ')'
-    chunk(ls);
-    check_match(ls, TK_END);
-    close_func(ls);
-    pushclosure(ls, &new_fs, e);
+void LexState::chunk() {
+    ++L->nCcalls;
+    while (!block_follow(t.token)) {
+        statement();
+    }
+    --L->nCcalls;
 }
 
-static int explist1(LexState* ls, expdesc* v) {
+// 将文件解析为一个Proto
+Proto* luaY_parser(lua_State* L, ZIO* z, const char* name) {
+    LexState ls;
+    FuncState fs(L);
+
+    ls.setinput(L, z, strtab(L)->newstr(L, name));
+    ls.openfunc(&fs);
+    ls.nexttoken(); // 读取该文件第一个Token
+    ls.chunk();
+    ls.closefunc();
+
+    return fs.f;
+}
+
+void LexState::body(expdesc* e, int needself, int line) {
+    /* body ->  `(' parlist `)' chunk END */
+    FuncState fs(L);
+    openfunc(&fs);
+    nexttoken(); // read '('
+    nexttoken(); // read ')'
+    chunk();
+    check_match(TK_END); // read 'end'
+    closefunc();
+    pushclosure(&fs, e);
+}
+
+int LexState::explist1(expdesc* v) {
+    /* explist1 -> expr { `,' expr } */
     int n = 1;
-    expr(ls, v);
-    while (testnext(ls, ',')) {
+    expr(v);
+    while (testnext(',')) {
         n++;
     }
 
@@ -158,38 +161,38 @@ static int explist1(LexState* ls, expdesc* v) {
 }
 
 /* funcstat -> FUNCTION funcname body */
-static void funcargs(LexState* ls, expdesc* f) {
+void LexState::funcargs(expdesc* f) {
     int base = 0;
     int nparams = 0;
-    FuncState* fs = ls->fs;
     expdesc args;
 
-    switch (ls->t.token) {
+    switch (t.token) {
     case '(': {
-        ls->nexttoken();
-        if (ls->t.token == ')')  /* arg list is empty? */
+        nexttoken();
+        if (t.token == ')')  /* arg list is empty? */
             args.k = VVOID;
         else
-            explist1(ls, &args);
-        check_match(ls, ')');
+            explist1(&args);
+        check_match(')');
         break;
     }
     default: {
         return;
     }
     }
-    base = f->u.s.info;
+    base = f->info;
     if (args.k != VVOID)
-        luaK_exp2nextreg(fs, &args);
+        fs->exp2nextreg(&args);
     nparams = fs->freereg - (base + 1);
-    init_exp(f, VCALL, luaK_codeABC(ls->fs, OP_CALL, base, nparams + 1, 2));
+    init_exp(f, VCALL, fs->codeABC(OP_CALL, base, nparams + 1, 2));
 }
 
-static void prefixexp(LexState* ls, expdesc* var) {
-    switch (ls->t.token)
+/* prefixexp -> NAME */
+void LexState::prefixexp(expdesc* var) {
+    switch (t.token)
     {
     case TK_NAME: {
-        singlevar(ls, var);
+        singlevar(var);
         break;
     }
     default:
@@ -197,16 +200,15 @@ static void prefixexp(LexState* ls, expdesc* var) {
     }
 }
 
-/* primaryexp -> prefixexp { `.' NAME | `[' exp `]' | `:' NAME funcargs | funcargs } */
-static void primaryexp(LexState* ls, expdesc* v) {
-    FuncState* fs = ls->fs;
-    prefixexp(ls, v);
+/* primaryexp -> prefixexp { `(' funcargs `)' } */
+void LexState::primaryexp(expdesc* v) {
+    prefixexp(v);
     while (true) {
-        switch (ls->t.token)
+        switch (t.token)
         {
         case '(': {
-            luaK_exp2nextreg(fs, v);
-            funcargs(ls, v);
+            fs->exp2nextreg(v);
+            funcargs(v);
             break;
         }
         default: return;
@@ -214,96 +216,87 @@ static void primaryexp(LexState* ls, expdesc* v) {
     }
 }
 
-static void simpleexp(LexState* ls, expdesc* v) {
-    switch (ls->t.token) {
+/* simpleexp -> NUMBER | STRING | primaryexp */
+void LexState::simpleexp(expdesc* v) {
+    switch (t.token) {
     case TK_NUMBER: {
         init_exp(v, VKNUM, 0);
-        v->u.nval = ls->t.seminfo.r;
+        v->nval = t.seminfo.r;
         break;
     }
     case TK_STRING: {
-        codestring(ls, v, ls->t.seminfo.ts);
+        codestring(v, t.seminfo.ts);
         break;
     }
     default:
-        primaryexp(ls, v);
+        primaryexp(v);
         return;
     }
-    ls->nexttoken();
+    nexttoken();
 }
 
 /*
-** subexpr -> (simpleexp | unop subexpr) { binop subexpr }
+** subexpr -> simpleexp
 ** where `binop' is any binary operator with a priority higher than `limit'
 */
-static BinOpr subexpr(LexState* ls, expdesc* v, unsigned int limit) {
+BinOpr LexState::subexpr(expdesc* v, unsigned int limit) {
     BinOpr op = OPR_NOBINOPR;
 
-    ls->L->nCcalls++;
-    simpleexp(ls, v);
-    op = getbinopr(ls->t.token);
-    ls->L->nCcalls--;
+    L->nCcalls++;
+    simpleexp(v);
+    L->nCcalls--;
 
     return op;
 }
 
-static void expr(LexState* ls, expdesc* v) {
-    subexpr(ls, v, 0);
+void LexState::expr(expdesc* v) {
+    subexpr(v, 0);
 }
 
-static void assignment(LexState* ls, expdesc* lh, int nvars) {
+void LexState::assignment(expdesc* lh, int nvars) {
     expdesc e;
     int nexps = 0;
-    ls->nexttoken();
-    nexps = explist1(ls, &e);
-    luaK_storevar(ls->fs, lh, &e);
+    checknext('=');
+    nexps = explist1(&e);
+    fs->storevar(lh, &e);
 }
 
-static int funcname(LexState* ls, expdesc* v) {
+int LexState::funcname(expdesc* v) {
     /* funcname -> NAME {field} [`:' NAME] */
-    singlevar(ls, v);
+    singlevar(v);
     return false;
 }
 
-static void funcstat(LexState* ls, int line) {
+void LexState::funcstat(int line) {
     /* funcstat -> FUNCTION funcname body */
     int needself;
     expdesc v, b;
-    ls->nexttoken();  /* skip FUNCTION */
-    needself = funcname(ls, &v);
-    body(ls, &b, needself, line);
-    luaK_storevar(ls->fs, &v, &b);
+    nexttoken();  /* skip FUNCTION */
+    needself = funcname(&v);
+    body(&b, needself, line);
+    fs->storevar(&v, &b);
 }
 
 
-static void exprstat(LexState* ls) {
-    /* stat -> func | assignment */
-    FuncState* fs = ls->fs;
+void LexState::exprstat() {
+    /* exprstat -> func | assignment */
     expdesc desc;
-    primaryexp(ls, &desc);
+    primaryexp(&desc);
     if (desc.k == VCALL)
-        SETARG_C(getcode(fs, &desc), 1);
+        fs->getcode(&desc).c = 1;
     else
-        assignment(ls, &desc, 1);
+        assignment(&desc, 1);
 }
 
-static void statement(LexState* ls) {
-    int line = ls->linenumber;  /* may be needed for error messages */
-    switch (ls->t.token)
+void LexState::statement() {
+    int line = linenumber;  /* may be needed for error messages */
+    switch (t.token)
     {
     case TK_FUNCTION: {
-        funcstat(ls, line);  /* stat -> funcstat */
+        funcstat(linenumber);  /* stat -> funcstat */
     }
     default: {
-        exprstat(ls);
+        exprstat();
     }
     }
-}
-
-static void chunk(LexState* ls) {
-    ++ls->L->nCcalls;
-    while (!block_follow(ls->t.token)) {
-        statement(ls);
-    }
-    --ls->L->nCcalls;
 }

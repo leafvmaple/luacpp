@@ -72,21 +72,18 @@ int luaD_poscall(lua_State* L, TValue* firstResult) {
 
 struct SParser {  /* data to `f_parser' */
     ZIO* z = nullptr;
-    const char* name = nullptr;
+    const char* name = nullptr; // chunk name
 };
 
 void f_parser(lua_State* L, SParser* p) {
-    Proto* tf = nullptr;
-    LClosure* cl = nullptr;
-
-    tf = luaY_parser(L, p->z, p->name);
-    cl = new LClosure(L, 0, static_cast<Table*>(gt(L)->value.gc));
+    Proto* tf = luaY_parser(L, p->z, p->name);
+    LClosure* cl = new LClosure(L, 0, static_cast<Table*>(gt(L)->value.gc)); // 环境表为全局表
     cl->p = tf;
     L->top++->setvalue(cl);
 }
 
 int luaD_protectedparser(lua_State* L, ZIO* z, const char* name) {
-    SParser p{z, name};
+    SParser p {z, name};
 
     f_parser(L, &p);
     return 1;

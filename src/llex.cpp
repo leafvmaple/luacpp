@@ -70,52 +70,51 @@ void LexState::setinput(lua_State* L, ZIO* z, TString* source) {
 }
 
 /* LUA_NUMBER */
-static void read_numeral(LexState* ls, SemInfo* seminfo) {
+void LexState::read_numeral(SemInfo* seminfo) {
     do {
-        save_and_next(ls);
-    } while (isdigit(ls->current) || ls->current == '.');
-    while (isalnum(ls->current) || ls->current == '_')
-        save_and_next(ls);
-    luaO_str2d(ls->buff.c_str(), &seminfo->r);
+        save_and_next(this);
+    } while (isdigit(current) || current == '.');
+    while (isalnum(current) || current == '_')
+        save_and_next(this);
+    luaO_str2d(buff.c_str(), &seminfo->r);
 }
 
-static void read_string(LexState* ls, int del, SemInfo* seminfo) {
-    save_and_next(ls);
-    while (ls->current != del) {
-        save_and_next(ls);
+void LexState::read_string(int del, SemInfo* seminfo) {
+    save_and_next(this);
+    while (current != del) {
+        save_and_next(this);
     }
-    save_and_next(ls);  /* skip delimiter */
-    seminfo->ts = ls->newstring(ls->buff.c_str() + 1, ls->buff.size() - 2);
+    save_and_next(this);  /* skip delimiter */
+    seminfo->ts = newstring(buff.c_str() + 1, buff.size() - 2);
 }
 
 // ½âÎöToken
-static int llex(LexState* ls, SemInfo* seminfo) {
-    ls->buff.clear();
+int LexState::llex(SemInfo* seminfo) {
+    buff.clear();
     while (true) {
-        switch (ls->current) {
+        switch (current) {
         case '"':
         case '\'': {
-            read_string(ls, ls->current, seminfo);
+            read_string(current, seminfo);
             return TK_STRING;
         }
         case EOZ: {
             return TK_EOS;
         }
         default: {
-            if (isspace(ls->current)) {
-                next(ls);
+            if (isspace(current)) {
+                next(this);
                 continue;
             }
-            else if (isdigit(ls->current)) {
-                read_numeral(ls, seminfo);
+            else if (isdigit(current)) {
+                read_numeral(seminfo);
                 return TK_NUMBER;
             }
-            else if (isalpha(ls->current) || ls->current == '_') {
-                TString* ts = nullptr;
+            else if (isalpha(current) || current == '_') {
                 do {
-                    save_and_next(ls);
-                } while (isalnum(ls->current) || ls->current == '_');
-                ts = ls->newstring(ls->buff.c_str(), ls->buff.size());
+                    save_and_next(this);
+                } while (isalnum(current) || current == '_');
+                TString* ts = newstring(buff.c_str(), buff.size());
                 if (ts->reserved)
                     return ts->reserved;
                 else {
@@ -124,8 +123,8 @@ static int llex(LexState* ls, SemInfo* seminfo) {
                 }
             }
             else {
-                int c = ls->current;
-                next(ls);
+                int c = current;
+                next(this);
                 return c;  /* single-char tokens (+ - / ...) */
             }
         }
@@ -135,5 +134,5 @@ static int llex(LexState* ls, SemInfo* seminfo) {
 
 void LexState::nexttoken() {
     lastline = linenumber;
-    t.token = llex(this, &t.seminfo);
+    t.token = llex(&t.seminfo);
 }

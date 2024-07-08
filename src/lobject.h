@@ -107,11 +107,12 @@ union Value {
 
 // Value With Type
 struct TValue {
+    Value value;
+    TVALUE_TYPE tt = LUA_TNIL;
+
 #ifdef _DEBUG
     std::string name;
 #endif
-    Value value;
-    TVALUE_TYPE tt = LUA_TNIL;
 
     void setnil(_NAME) { _SET_DEBUG_NAME
         tt = LUA_TNIL;
@@ -156,7 +157,6 @@ struct TValue {
 
 struct TString: GCheader {
     RESERVED     reserved = TK_NONE;      // 字符串为系统保留标识符时，这里不为0
-    unsigned int hash     = 0;
     std::string  s;
 
     enum { t = LUA_TSTRING };
@@ -199,16 +199,31 @@ struct Table : GCheader {
     std::vector<TValue> array;
     std::unordered_map<const TValue, TValue, KeyFunction> node;
 
+    lua_State* L = nullptr;
+
     enum { t = LUA_TTABLE };
 
-    Table(lua_State* L, int narray, int nhash);
+    Table(lua_State* _L, int narray, int nhash);
 
     TValue* setstr(lua_State* L, const TString* key);
     TValue* set(lua_State* L, const TValue* key);
+    template<typename T>
+    void set(lua_State* L, const TValue* key, T value) {
+        TValue* idx = set(L, key);
+        idx->setvalue(value);
+    }
 
-    const TValue* getnum(int key);
-    const TValue* getstr(const TString* key);
-    const TValue* get(const TValue* key);
+    const TValue& operator[](const TValue* key) const {
+        return *get(key);
+    }
+
+    TValue& operator[](const TValue* key) {
+        return *set(L, key);
+    }
+
+    const TValue* getnum(int key) const;
+    const TValue* getstr(const TString* key) const;
+    const TValue* get(const TValue* key) const;
 };
 
 struct Closure : GCheader {
@@ -276,10 +291,5 @@ inline bool ttisstring(TValue* obj) {
 
 const TValue luaO_nilobject_;
 #define luaO_nilobject (&luaO_nilobject_)
-
-template<typename T>
-void setgcvalue(TValue* obj, const T* x, _NAME) {
-    obj->setvalue(x, debug);
-}
 
 int luaO_str2d(const char* s, lua_Number* result);

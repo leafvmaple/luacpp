@@ -4,6 +4,7 @@
 #include "lzio.h"
 
 struct LexState;
+struct expdesc;
 
 enum expkind {
     VVOID,	/* no value */
@@ -29,16 +30,45 @@ struct FuncState {
 	FuncState* prev    = nullptr; // 上层嵌套函数
     lua_State* L       = nullptr;
 	LexState*  ls      = nullptr;
-    int        pc      = 0;
     int        freereg = 0;  /* first free register */
+
+    FuncState(lua_State* L) {
+        f = new Proto(L);
+        h = new Table(L, 0, 0);
+    }
+
+    Instruction& getcode(expdesc* e);
+    void discharge2reg(expdesc* e, int reg);
+    void exp2reg(expdesc* e, int reg);
+
+    int codeABx(OpCode o, int A, unsigned int Bx);
+    int codeABC(OpCode o, int A, int B, int C);
+    int exp2anyreg(expdesc* e);
+    void reserveregs(int n);
+    void dischargevars(expdesc* e);
+    void exp2nextreg(expdesc* e);
+    void storevar(expdesc* var, expdesc* ex);
+    void ret(int first, int nret);
+    int stringK(TString* s);
+    int numberK(lua_Number r);
+
+    int code(Instruction i, int line);
+
+private:
+    int addk(TValue* k, TValue* v);
 };
 
 struct expdesc {
     expkind k;
     union {
-        struct { int info, aux; } s;
+        struct {
+            // VGLOBAL: 常量表索引
+            // VRELOCABLE: 指令PC
+            int info;
+            int aux;
+        };
         lua_Number nval;  // 表达式为数字
-    } u;
+    };
 };
 
 Proto* luaY_parser(lua_State* L, ZIO* z, const char* name);

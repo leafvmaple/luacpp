@@ -3,7 +3,6 @@
 #include "lgc.h"
 
 TString::TString(lua_State* L, const char* str, size_t l) {
-    hash = 0;
     luaC_white(marked, G(L));
     s = std::string(str, l);
 }

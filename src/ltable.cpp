@@ -13,7 +13,9 @@ void setnodevector(lua_State* L, Table* t, int size) {
     t->node.reserve(size);
 }
 
-Table::Table(lua_State* L, int narray, int nhash) {
+Table::Table(lua_State* _L, int narray, int nhash) {
+    L = _L;
+
     luaC_link(L, this, LUA_TTABLE);
 
     setarrayvector(L, this, narray);
@@ -24,7 +26,7 @@ TValue* newkey(lua_State* L, Table* t, const TValue* key) {
     return &t->node[*key];
 }
 
-const TValue* Table::getnum(int key) {
+const TValue* Table::getnum(int key) const {
     if (key > 0 && key <= array.size())
         return &array[key - 1];
     TValue o((lua_Number)key);
@@ -34,7 +36,7 @@ const TValue* Table::getnum(int key) {
     return luaO_nilobject;
 }
 
-const TValue* Table::getstr(const TString* key) {
+const TValue* Table::getstr(const TString* key) const {
     TValue o(key);
     auto it = node.find(o);
     if (it != node.end())
@@ -42,7 +44,7 @@ const TValue* Table::getstr(const TString* key) {
     return luaO_nilobject;
 }
 
-const TValue* Table::get(const TValue* key) {
+const TValue* Table::get(const TValue* key) const {
     switch (key->tt) {
     case LUA_TNIL: return luaO_nilobject;
     case LUA_TSTRING: return getstr((TString*)key->value.gc);
@@ -50,7 +52,7 @@ const TValue* Table::get(const TValue* key) {
     }
 }
 
-TValue* Table::setstr(lua_State* L, const TString* key){
+TValue* Table::setstr(lua_State* L, const TString* key) {
     const TValue* p = getstr(key);
     if (p != luaO_nilobject)
         return (TValue*)p;

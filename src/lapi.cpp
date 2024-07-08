@@ -82,16 +82,18 @@ void lua_pushcfunction(lua_State* L, lua_CFunction f, _IMPL) {
 }
 
 void lua_settable(lua_State* L, int idx) {
-    TValue* t = index2adr(L, idx);
-    luaV_settable(L, t, L->top - 2, L->top - 1);
-    L->top -= 2;
+    Table* t = ((Table*)index2adr(L, idx)->value.gc);
+    TValue* value = --L->top;
+    TValue* key = --L->top;
+
+    (*t)[key] = *value;
 }
 
 void lua_setfield(lua_State* L, int idx, const char* k) {
+    Table* t = ((Table*)index2adr(L, idx)->value.gc);
     TValue key(strtab(L)->newstr(L, k), k);
-    TValue* t = index2adr(L, idx);
-    luaV_settable(L, t, &key, L->top - 1);
-    L->top--;
+
+    (*t)[&key] = *--L->top;
 }
 
 void lua_createtable(lua_State* L, int narr, int nrec, _IMPL) {
@@ -110,15 +112,17 @@ void* lua_touserdata(lua_State* L, int idx) {
 }
 
 void lua_gettable(lua_State* L, int idx) {
-    TValue* t = index2adr(L, idx);
-    luaV_gettable(L, t, L->top - 1, L->top - 1);
+    Table* t = ((Table*) index2adr(L, idx)->value.gc);
+    TValue* key = L->top - 1;
+
+    *(key) = (*t)[key];
 }
 
 void lua_getfield(lua_State* L, int idx, const char* k) {
+    Table* t = ((Table*)index2adr(L, idx)->value.gc);
     TValue key(strtab(L)->newstr(L, k));
-    TValue* t = index2adr(L, idx);
-    luaV_gettable(L, t, &key, L->top);
-    L->top++;
+
+    *L->top++ = (*t)[&key];
 }
 
 int lua_gettop(lua_State* L) {
@@ -175,7 +179,7 @@ int lua_cpcall(lua_State* L, lua_CFunction func, void* ud) {
 }
 
 int lua_load(lua_State* L, lua_Reader reader, void* data, const char* chunkname) {
-    ZIO z{0, nullptr, reader, data, L};
+    ZIO z {0, nullptr, reader, data, L};
     return luaD_protectedparser(L, &z, chunkname);
 }
 
