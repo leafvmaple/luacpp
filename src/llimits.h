@@ -7,6 +7,8 @@
 
 typedef unsigned char lu_byte;
 typedef unsigned int  lu_int32;
+typedef ptrdiff_t l_mem;
+
 typedef size_t lu_mem;
 
 #ifndef MINSTRTABSIZE

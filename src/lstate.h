@@ -26,8 +26,8 @@ struct CallInfo
 
 struct stringtable {
     // TODO
-    std::unordered_map<std::string, GCheader*> hash;
-    lu_int32                                   nuse = 0;
+    lua_GCHash hash;
+    lu_int32 nuse = 0;
 
     void resize(int newsize);
     TString* newstr(lua_State* L, const char* str);
@@ -37,8 +37,11 @@ struct stringtable {
 struct global_State
 {
     stringtable strt;
-    lua_marked currentwhite;
-    std::list<GCheader*> rootgc;
+    lua_Marked currentwhite;
+    GC_STATE gcstate;
+    lua_GCHash::iterator sweepstrgc;  /* 字符串池GC当前位置*/
+    lua_GCList rootgc;  /* 根GC池 */
+    lua_GCList::iterator sweepgc;  /* 根GC当前位置 */
     lu_mem GCthreshold = 0;
     TValue l_registry;
     TString* tmname[TM_N];  /* array with tag-method names */

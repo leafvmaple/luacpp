@@ -31,7 +31,17 @@ static int luaB_print(lua_State* L) {
     return 0;
 }
 
+static int luaB_collectgarbage(lua_State* L) {
+    static const char* const opts[] = { "collect", nullptr };
+    static const int optsnum[] = { LUA_GCCOLLECT };
+    int o = luaL_checkoption(L, 1, "collect", opts);
+    int res = lua_gc(L, optsnum[o], 0);
+
+    return 0;
+}
+
 static const luaL_Reg base_funcs[] = {
+    {"collectgarbage", luaB_collectgarbage},
     {"print", luaB_print},
     {"tostring", luaB_tostring},
     {nullptr, nullptr}

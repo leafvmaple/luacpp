@@ -30,6 +30,15 @@ enum TVALUE_TYPE {
 #define LUA_ENVIRONINDEX	(-10001)
 #define LUA_GLOBALSINDEX	(-10002)
 
+#define LUA_GCSTOP		0
+#define LUA_GCRESTART		1
+#define LUA_GCCOLLECT		2
+#define LUA_GCCOUNT		3
+#define LUA_GCCOUNTB		4
+#define LUA_GCSTEP		5
+#define LUA_GCSETPAUSE		6
+#define LUA_GCSETSTEPMUL	7
+
 #define _NAME char const* debug = nullptr
 #define _IMPL char const* debug
 
@@ -37,6 +46,8 @@ typedef std::function<int(lua_State*)> lua_CFunction;
 typedef const char* (*lua_Reader) (lua_State* L, void* ud, size_t* sz);
 
 lua_State* lua_newstate();
+
+int lua_gc(lua_State* L, int what, int data);
 
 void lua_pushnil(lua_State* L);
 void lua_pushlstring(lua_State* L, const char* s, size_t l, _NAME);

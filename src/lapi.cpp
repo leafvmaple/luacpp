@@ -49,6 +49,17 @@ static void f_Ccall(lua_State* L, CCallS* c) {
     luaD_call(L, L->top - 2, 0); // Ö¸Ïòcl
 }
 
+int lua_gc(lua_State* L, int what, int data) {
+    switch (what) {
+    case LUA_GCCOLLECT:
+        luaC_fullgc(L);
+        break;
+    default:
+        break;
+    }
+    return 0;
+}
+
 void lua_pushnil(lua_State* L) {
     L->top++->setnil();
 }

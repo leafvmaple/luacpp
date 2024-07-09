@@ -52,6 +52,15 @@ void luaL_register(lua_State* L, const char* libname, const luaL_Reg* l) {
     luaI_openlib(L, libname, l, 0);
 }
 
+int luaL_checkoption(lua_State* L, int arg, const char* def, const char* const lst[]) {
+    // luaL_optstring
+    const char* name = lua_tostring(L, arg);
+    for (int i = 0; lst[i]; i++)
+        if (strcmp(lst[i], name) == 0)
+            return i;
+    return -1;
+}
+
 const char* getS(lua_State* L, void* ud, size_t* size) {
     LoadS* ls = (LoadS*)ud;
     if (!ls->size)

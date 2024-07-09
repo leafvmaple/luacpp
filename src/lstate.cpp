@@ -59,12 +59,15 @@ lua_State* lua_newstate() {
 
     g->currentwhite.set(WHITE0BIT);
     g->currentwhite.set(FIXEDBIT);
-    luaC_white(L->marked, g);
+    L->marked.white(g->currentwhite);
 
     preinit_state(L, g);
-    g->rootgc.push_back(L);
+    g->rootgc.emplace_front(L);
 
     f_luaopen(L);
+
+    g->sweepgc = g->rootgc.begin();
+    g->sweepstrgc = strtab(L)->hash.begin();
 
     return L;
 }

@@ -74,19 +74,44 @@ enum RESERVED {
     TK_EOS
 };
 
+enum GC_STATE {
+    GCSpause,
+    GCSpropagate,
+    GCSsweepstring,
+    GCSsweep,
+    GCSfinalize,
+};
+
 #define NUM_RESERVED	(TK_RESERVED_COUNT - FIRST_RESERVED)
 
-typedef std::bitset<MARKED_COUNT> lua_marked;
-typedef double lua_Number;
-
+struct GCheader;
 struct TValue;
 union GCObject;
 
+typedef std::list<GCheader*> lua_GCList;
+typedef std::unordered_map<size_t, lua_GCList> lua_GCHash;
+
+typedef double lua_Number;
+
+struct lua_Marked {
+    std::bitset<MARKED_COUNT> bit;
+
+    bool operator[](size_t index) const {
+        return bit[index];
+    }
+
+    void set(size_t index, bool value = true) {
+        bit.set(index, value);
+    }
+
+    void white(const lua_Marked& in, bool reset = true);
+    int isdead(const lua_Marked& gm) const;
+    void maskmarks(const lua_Marked& gm);
+};
 
 struct GCheader{
-    // GCObject* next;
     TVALUE_TYPE tt = LUA_TNIL;  // GC的时候使用，来判断类型
-    lua_marked marked;
+    lua_Marked marked;
 
     virtual ~GCheader() {}
 };
@@ -154,7 +179,7 @@ struct TValue {
 };
 
 struct TString: GCheader {
-    RESERVED     reserved = TK_NONE;      // 字符串为系统保留标识符时，这里不为0
+    RESERVED     reserved = TK_NONE;      // 字符串为系统保留标识符时不为0
     std::string  s;
 
     enum { t = LUA_TSTRING };

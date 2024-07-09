@@ -3,7 +3,7 @@
 #include "lgc.h"
 
 TString::TString(lua_State* L, const char* str, size_t l) {
-    luaC_white(marked, G(L));
+    marked.white(G(L)->currentwhite);
     s = std::string(str, l);
 }
 
@@ -16,11 +16,19 @@ TString* stringtable::newstr(lua_State* L, const char* s) {
 }
 
 TString* stringtable::newlstr(lua_State* L, const char* str, size_t l) {
-    GCheader* o = hash[str];
-    if (!o) {
-        o = new TString(L, str, l);
-        hash[str] = o;
-        nuse++;
+    size_t step = (l >> 5) + 1;
+    size_t h = l;
+    for (size_t i = l; i >= step; i -= step)
+        h = h ^ ((h << 5) + (h >> 2) + static_cast<unsigned char>(str[i - 1]));
+
+    auto& list = hash[h];
+    for (auto gco : list) {
+        auto ts = static_cast<TString*>(gco);
+        if (ts->s == str)
+            return ts;
     }
-    return static_cast<TString*>(o);
+
+    auto ts = new TString(L, str, l);
+    list.emplace_back(ts);
+    return ts;
 }

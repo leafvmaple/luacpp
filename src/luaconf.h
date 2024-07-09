@@ -8,6 +8,8 @@
 #define LUAI_MAXNUMBER2STR  32 /* 16 digits, sign, point, and \0 */
 #define LUA_MAXINPUT        512
 
+#define LUAI_MEM	ptrdiff_t
+
 inline int lua_readline(char* buff, const char* prmt) {
     fputs(prmt, stdout);
     fflush(stdout);
