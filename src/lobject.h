@@ -28,8 +28,8 @@ enum MARKED_TYPE {
     FINALIZEDBIT,
     KEYWEAKBIT = FINALIZEDBIT,
     VALUEWEAKBIT,
-    FIXEDBIT, // 不会GC
-    SFIXEDBIT,
+    FIXEDBIT, // 不会GC（关键字）
+    SFIXEDBIT, // 主Thread，luaC_freeall的时候也不会GC
 
     MARKED_COUNT,
 };
@@ -84,6 +84,7 @@ enum GC_STATE {
 
 #define NUM_RESERVED	(TK_RESERVED_COUNT - FIRST_RESERVED)
 
+struct global_State;
 struct GCheader;
 struct TValue;
 union GCObject;
@@ -92,6 +93,10 @@ typedef std::list<GCheader*> lua_GCList;
 typedef std::unordered_map<size_t, lua_GCList> lua_GCHash;
 
 typedef double lua_Number;
+
+
+void* operator new(std::size_t size, lua_State* L);
+void operator delete(void* p, lua_State* L) noexcept;
 
 struct lua_Marked {
     std::bitset<MARKED_COUNT> bit;
@@ -104,14 +109,28 @@ struct lua_Marked {
         bit.set(index, value);
     }
 
-    void white(const lua_Marked& in, bool reset = true);
-    int isdead(const lua_Marked& gm) const;
-    void maskmarks(const lua_Marked& gm);
+    void towhite(global_State* g, bool reset = true);
+
+    void togray();
+    void toblack();
+
+    bool iswhite() const;
+    bool isblack() const;
+    bool isgray() const;
+
+    int isdead(global_State* g) const;
+
+    void maskmarks(global_State* g);
 };
 
-struct GCheader{
-    TVALUE_TYPE tt = LUA_TNIL;  // GC的时候使用，来判断类型
+struct GCheader {
     lua_Marked marked;
+
+    virtual void markobject(global_State* g) {};
+    virtual int traverse(global_State* g) { return 0; }
+
+    void link(lua_State* L);
+    void trymark(global_State* g);
 
     virtual ~GCheader() {}
 };
@@ -223,10 +242,14 @@ struct Table : GCheader {
     std::unordered_map<const TValue, TValue, KeyFunction> node;
 
     lua_State* L = nullptr;
+    GCheader* gclist = nullptr;
 
     enum { t = LUA_TTABLE };
 
     Table(lua_State* _L, int narray, int nhash);
+
+    virtual void markobject(global_State* g);
+    virtual int traverse(global_State* g);
 
     TValue* setstr(lua_State* L, const TString* key);
     TValue* set(lua_State* L, const TValue* key);
@@ -250,7 +273,6 @@ struct Table : GCheader {
 };
 
 struct Closure : GCheader {
-    lu_byte   isC     = false;
     GCObject* gclist  = nullptr;
     Table*    env     = nullptr;
 
@@ -304,6 +326,10 @@ struct LClosure : Closure {
     virtual int precall(lua_State* L, TValue* func, int nresults);
     void execute(lua_State* L, int nexeccalls);
 };
+
+inline bool ttisnil(TValue* obj) {
+    return obj->tt == LUA_TNIL;
+}
 
 inline bool ttisnumber(TValue* obj) {
     return obj->tt == LUA_TNUMBER;

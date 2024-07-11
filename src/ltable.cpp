@@ -15,8 +15,7 @@ void setnodevector(lua_State* L, Table* t, int size) {
 
 Table::Table(lua_State* _L, int narray, int nhash) {
     L = _L;
-
-    luaC_link(L, this, LUA_TTABLE);
+    link(L);
 
     setarrayvector(L, this, narray);
     setnodevector(L, this, nhash);
@@ -50,6 +49,20 @@ const TValue* Table::get(const TValue* key) const {
     case LUA_TSTRING: return getstr((TString*)key->value.gc);
     case LUA_TNUMBER: return getnum(key->value.n);
     }
+}
+
+int Table::traverse(global_State* g) {
+    for (auto& v : array)
+        v.value.gc->traverse(g);
+    for (auto it = node.begin(); it != node.end();) {
+        if (ttisnil(&it->second))
+            it = node.erase(it);
+        else {
+            it->second.value.gc->traverse(g);
+            ++it;
+        }
+    }
+    return 0;
 }
 
 TValue* Table::setstr(lua_State* L, const TString* key) {

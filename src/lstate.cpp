@@ -37,8 +37,8 @@ void stack_init(lua_State* L) {
 void f_luaopen(lua_State* L) {
     stack_init(L);
 
-    gt(L)->setvalue(new Table(L, 0, 2));
-    registry(L)->setvalue(new Table(L, 0, 2));
+    gt(L)->setvalue(new (L) Table(L, 0, 2));
+    registry(L)->setvalue(new (L) Table(L, 0, 2));
     strtab(L)->resize(MINSTRTABSIZE);
 
     luaT_init(L);
@@ -57,9 +57,10 @@ lua_State* lua_newstate() {
     L = &l->l;
     g = &l->g;
 
+    g->mainthread = L;
     g->currentwhite.set(WHITE0BIT);
     g->currentwhite.set(FIXEDBIT);
-    L->marked.white(g->currentwhite);
+    L->marked.towhite(g);
 
     preinit_state(L, g);
     g->rootgc.emplace_front(L);

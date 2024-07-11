@@ -3,7 +3,7 @@
 #include "lgc.h"
 
 TString::TString(lua_State* L, const char* str, size_t l) {
-    marked.white(G(L)->currentwhite);
+    marked.towhite(G(L));
     s = std::string(str, l);
 }
 
@@ -28,7 +28,7 @@ TString* stringtable::newlstr(lua_State* L, const char* str, size_t l) {
             return ts;
     }
 
-    auto ts = new TString(L, str, l);
+    auto ts = new (L) TString(L, str, l);
     list.emplace_back(ts);
     return ts;
 }

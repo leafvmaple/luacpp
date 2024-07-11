@@ -5,8 +5,8 @@ static lua_GCList::iterator sweeplist(lua_State* L, lua_GCList::iterator it, lua
     global_State* g = G(L);
 
     for (int i = 0; i < count; i++) {
-        if (!(*it)->marked.isdead(g->currentwhite) || (*it)->marked[FIXEDBIT]) {
-            (*it)->marked.maskmarks(g->currentwhite);
+        if (!(*it)->marked.isdead(g) || (*it)->marked[FIXEDBIT]) {
+            (*it)->marked.maskmarks(g);
         }
         else {
             delete *it;
@@ -17,9 +17,38 @@ static lua_GCList::iterator sweeplist(lua_State* L, lua_GCList::iterator it, lua
     return it;
 }
 
+static void markroot(lua_State* L) {
+    global_State* g = G(L);
+
+    g->gray.clear();
+    g->mainthread->trymark(g);
+    gt(g->mainthread)->value.gc->trymark(g);
+    registry(L)->value.gc->trymark(g);
+
+    g->gcstate = GCSpropagate;
+}
+
+static l_mem propagatemark(global_State* g) {
+    GCheader* o = g->gray.front();
+    g->gray.pop_front();
+
+    o->marked.toblack();
+    if (o->traverse(g))
+        o->marked.togray();
+    return 0;
+}
+
 static l_mem singlestep(lua_State* L) {
     global_State* g = G(L);
     switch (g->gcstate) {
+    case GCSpropagate: {
+        if (!g->gray.empty())
+            return propagatemark(g);
+        else {
+            // atomic(L);  /* finish mark phase */
+            return 0;
+        }
+    }
     case GCSsweepstring:
         auto& list  = g->sweepstrgc->second;
         sweeplist(L, list.begin(), list, list.size());
@@ -30,29 +59,66 @@ static l_mem singlestep(lua_State* L) {
     return 0;
 }
 
-// 将可GC对象挂到GC列表中，同时标记为白色
-void luaC_link(lua_State* L, GCheader* o, TVALUE_TYPE tt) {
+void GCheader::link(lua_State* L) {
     global_State* g = G(L);
 
-    g->rootgc.emplace_front(o);
-    o->tt = tt;
-    o->marked.white(g->currentwhite);
+    g->rootgc.emplace_front(this);
+    marked.towhite(g);
 }
 
-void lua_Marked::white(const lua_Marked& in, bool reset) {
+void GCheader::trymark(global_State* g) {
+    if (marked.iswhite())
+        markobject(g);
+}
+
+void Table::markobject(global_State* g) {
+    marked.togray();
+    g->gray.emplace_front(this);
+}
+
+void lua_Marked::towhite(global_State* g, bool reset) {
     if (reset)
         bit.reset();
-    bit[WHITE0BIT] = in[WHITE0BIT];
-    bit[WHITE1BIT] = in[WHITE1BIT];
+    bit[WHITE0BIT] = g->currentwhite[WHITE0BIT];
+    bit[WHITE1BIT] = g->currentwhite[WHITE1BIT];
 }
 
-int lua_Marked::isdead(const lua_Marked& gm) const {
-    return (bit[WHITE0BIT] ^ gm[WHITE0BIT]) & (bit[WHITE1BIT] ^ gm[WHITE1BIT]);
-}
-
-void lua_Marked::maskmarks(const lua_Marked& gm) {
+void lua_Marked::togray() {
+    bit[WHITE0BIT] = 0;
+    bit[WHITE1BIT] = 0;
     bit[BLACKBIT] = 0;
-    white(gm, false);
+}
+
+void lua_Marked::toblack() {
+    bit[BLACKBIT] = 1;
+}
+
+bool lua_Marked::iswhite() const {
+    return bit[WHITE0BIT] && bit[WHITE1BIT];
+}
+
+bool lua_Marked::isblack() const {
+    return bit[BLACKBIT];
+}
+
+bool lua_Marked::isgray() const {
+    return !iswhite() && !isblack();
+}
+
+int lua_Marked::isdead(global_State* g) const {
+    return (bit[WHITE0BIT] ^ g->currentwhite[WHITE0BIT]) & (bit[WHITE1BIT] ^ g->currentwhite[WHITE1BIT]);
+}
+
+void lua_Marked::maskmarks(global_State* g) {
+    bit[BLACKBIT] = 0;
+    towhite(g, false);
+}
+
+void luaC_checkGC(lua_State* L) {
+    global_State* g = G(L);
+    if (g->totalbytes >= g->GCthreshold) {
+        luaC_fullgc(L);
+    }
 }
 
 void luaC_fullgc(lua_State* L) {
@@ -63,7 +129,11 @@ void luaC_fullgc(lua_State* L) {
         g->gcstate = GCSsweepstring;
     }
 
-    while (g->gcstate != GCSfinalize) {
+    while (g->gcstate != GCSfinalize)
         singlestep(L);
-    }
+
+    markroot(L);
+
+    while (g->gcstate != GCSpause)
+        singlestep(L);
 }

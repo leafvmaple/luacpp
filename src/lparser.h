@@ -33,8 +33,8 @@ struct FuncState {
     int        freereg = 0;  /* first free register */
 
     FuncState(lua_State* L) {
-        f = new Proto(L);
-        h = new Table(L, 0, 0);
+        f = new (L) Proto(L);
+        h = new (L) Table(L, 0, 0);
     }
 
     Instruction& getcode(expdesc* e);

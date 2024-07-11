@@ -39,11 +39,19 @@ struct global_State
     stringtable strt;
     lua_Marked currentwhite;
     GC_STATE gcstate;
+
+    std::list<GCheader*> gray;
+
     lua_GCHash::iterator sweepstrgc;  /* 字符串池GC当前位置*/
     lua_GCList rootgc;  /* 根GC池 */
     lua_GCList::iterator sweepgc;  /* 根GC当前位置 */
+
+    lu_mem totalbytes = 0;  /* total bytes allocated */
     lu_mem GCthreshold = 0;
     TValue l_registry;
+
+    lua_State* mainthread;
+
     TString* tmname[TM_N];  /* array with tag-method names */
 };
 
@@ -65,8 +73,6 @@ struct lua_State : GCheader
     TValue env;
 
     enum { t = LUA_TTHREAD };
-
-    lua_State() { tt = LUA_TTHREAD; }
 };
 
 // 获取全局变量表

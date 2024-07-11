@@ -42,7 +42,7 @@ Table* getcurrenv(lua_State* L) {
 // |         |           |
 // | Closure | UsderData | L->top
 static void f_Ccall(lua_State* L, CCallS* c) {
-    CClosure* cl = new CClosure(L, 0, getcurrenv(L));
+    CClosure* cl = new (L) CClosure(L, 0, getcurrenv(L));
     cl->f = c->func;
     L->top++->setvalue(cl, "#[Call] CClosure#");
     L->top++->setvalue(c->ud, "#[Call] UsderData#");
@@ -80,7 +80,7 @@ void lua_pushvalue(lua_State* L, int idx) {
 }
 
 void lua_pushcclosure(lua_State* L, lua_CFunction fn, int n, _IMPL) {
-    CClosure* cl = new CClosure(L, n, getcurrenv(L));
+    CClosure* cl = new (L) CClosure(L, n, getcurrenv(L));
     cl->f = fn;
     L->top -= n;
     while (n--)
@@ -108,7 +108,7 @@ void lua_setfield(lua_State* L, int idx, const char* k) {
 }
 
 void lua_createtable(lua_State* L, int narr, int nrec, _IMPL) {
-    L->top++->setvalue(new Table(L, narr, nrec), debug);
+    L->top++->setvalue(new (L) Table(L, narr, nrec), debug);
 }
 
 void* lua_touserdata(lua_State* L, int idx) {
