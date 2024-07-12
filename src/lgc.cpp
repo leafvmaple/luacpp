@@ -1,12 +1,14 @@
 #include "lgc.h"
 #include "lstate.h"
 
+#define GCSWEEPMAX	40
+
 static lua_GCList::iterator sweeplist(lua_State* L, lua_GCList::iterator it, lua_GCList& list, lu_mem count) {
     global_State* g = G(L);
 
-    for (int i = 0; i < count; i++) {
+    for (int i = 0; i < list.size() && i < count; i++) {
         if (!(*it)->marked.isdead(g) || (*it)->marked[FIXEDBIT]) {
-            (*it)->marked.maskmarks(g);
+            (*it++)->marked.maskmarks(g);
         }
         else {
             delete *it;
@@ -21,6 +23,7 @@ static void markroot(lua_State* L) {
     global_State* g = G(L);
 
     g->gray.clear();
+
     g->mainthread->trymark(g);
     gt(g->mainthread)->value.gc->trymark(g);
     registry(L)->value.gc->trymark(g);
@@ -30,11 +33,9 @@ static void markroot(lua_State* L) {
 
 static l_mem propagatemark(global_State* g) {
     GCheader* o = g->gray.front();
-    g->gray.pop_front();
 
     o->marked.toblack();
-    if (o->traverse(g))
-        o->marked.togray();
+    o->traverse(g);
     return 0;
 }
 
@@ -49,13 +50,30 @@ static l_mem singlestep(lua_State* L) {
             return 0;
         }
     }
-    case GCSsweepstring:
-        auto& list  = g->sweepstrgc->second;
+    case GCSsweepstring: {
+        auto& list = g->sweepstrgc->second;
         sweeplist(L, list.begin(), list, list.size());
         if (++g->sweepstrgc == strtab(L)->hash.end())
             g->gcstate = GCSsweep;
         break;
     }
+    case GCSsweep: {
+        g->sweepgc = sweeplist(L, g->sweepgc, g->rootgc, GCSWEEPMAX);
+        if (g->sweepgc == g->rootgc.end())  /* nothing more to sweep? */
+            g->gcstate = GCSfinalize;  /* end sweep phase */
+        break;
+    }
+    }
+    return 0;
+}
+
+void GCheader::markobject(global_State* g) {
+    marked.togray();
+    g->gray.emplace_front(this);
+}
+
+int GCheader::traverse(global_State* g) {
+    g->gray.pop_front();
     return 0;
 }
 
@@ -69,11 +87,6 @@ void GCheader::link(lua_State* L) {
 void GCheader::trymark(global_State* g) {
     if (marked.iswhite())
         markobject(g);
-}
-
-void Table::markobject(global_State* g) {
-    marked.togray();
-    g->gray.emplace_front(this);
 }
 
 void lua_Marked::towhite(global_State* g, bool reset) {
@@ -94,7 +107,7 @@ void lua_Marked::toblack() {
 }
 
 bool lua_Marked::iswhite() const {
-    return bit[WHITE0BIT] && bit[WHITE1BIT];
+    return bit[WHITE0BIT] || bit[WHITE1BIT];
 }
 
 bool lua_Marked::isblack() const {

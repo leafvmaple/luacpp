@@ -4,7 +4,7 @@
 
 struct lua_State;
 
-#define LUA_VERSION     "Lua Lite 0.1.2"
+#define LUA_VERSION     "Lua Lite 0.2.0"
 #define LUA_COPYRIGHT   "Copyright (C) 2022-2024 lvmaple.com, Zohar Lee"
 
 enum TVALUE_TYPE {

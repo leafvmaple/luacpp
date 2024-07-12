@@ -126,8 +126,8 @@ struct lua_Marked {
 struct GCheader {
     lua_Marked marked;
 
-    virtual void markobject(global_State* g) {};
-    virtual int traverse(global_State* g) { return 0; }
+    virtual void markobject(global_State* g);
+    virtual int traverse(global_State* g);
 
     void link(lua_State* L);
     void trymark(global_State* g);
@@ -248,7 +248,6 @@ struct Table : GCheader {
 
     Table(lua_State* _L, int narray, int nhash);
 
-    virtual void markobject(global_State* g);
     virtual int traverse(global_State* g);
 
     TValue* setstr(lua_State* L, const TString* key);

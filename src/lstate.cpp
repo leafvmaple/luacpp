@@ -72,3 +72,25 @@ lua_State* lua_newstate() {
 
     return L;
 }
+
+int lua_State::traverse(global_State* g) {
+    // TODO
+    g->gray.pop_front();
+    // marked.togray(); ?
+
+    gt(this)->value.gc->trymark(g);
+
+    TValue* lim = top;
+    for (CallInfo* it = base_ci.data(); it <= ci; it++)
+        if (lim < top)
+            lim = ci->top;
+
+    TValue* o = stack.data();
+    for (; o < top; o++)
+        o->value.gc->trymark(g);
+
+    for (; o <= lim; o++)
+        o->setnil();
+
+    return 0;
+}

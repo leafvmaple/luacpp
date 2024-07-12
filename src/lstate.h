@@ -73,6 +73,8 @@ struct lua_State : GCheader
     TValue env;
 
     enum { t = LUA_TTHREAD };
+
+    virtual int traverse(global_State* g);
 };
 
 // 获取全局变量表

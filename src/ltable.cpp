@@ -52,15 +52,14 @@ const TValue* Table::get(const TValue* key) const {
 }
 
 int Table::traverse(global_State* g) {
+    g->gray.pop_front();
     for (auto& v : array)
-        v.value.gc->traverse(g);
+        v.value.gc->trymark(g);
     for (auto it = node.begin(); it != node.end();) {
         if (ttisnil(&it->second))
             it = node.erase(it);
-        else {
-            it->second.value.gc->traverse(g);
-            ++it;
-        }
+        else
+            it++->second.value.gc->trymark(g);
     }
     return 0;
 }
