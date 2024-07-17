@@ -192,7 +192,7 @@ struct TValue {
 
     int tostring(lua_State* L);
 
-    TValue() {}
+    TValue(_NAME) { setnil(debug); }
     explicit TValue(lua_Number n, _NAME) { setvalue(n, debug); }
     explicit TValue(void* p, _NAME) { setvalue(p, debug); }
     explicit TValue(const bool b, _NAME) { setvalue(b, debug); }

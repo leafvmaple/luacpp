@@ -20,17 +20,19 @@ void preinit_state(lua_State* L, global_State* g) {
 // 1. 初始化base_ci
 // 2. 初始化stack
 void stack_init(lua_State* L) {
-    L->base_ci.resize(BASIC_CI_SIZE);
-    L->ci = &L->base_ci.front();
-
+    // prevent capacity from changing
+    L->base_ci.reserve(BASIC_CI_SIZE);
     L->stack.resize(BASIC_STACK_SIZE + EXTRA_STACK);
 
-    L->ci->func = &L->stack.front();
-    L->ci->func->setnil("[Init] #Function Entry#");
-    L->ci->base = L->ci->func + 1;
-    L->ci->top = L->ci->base + LUA_MINSTACK;
+    auto& ci = L->base_ci.emplace_back();
+    // ci.func = &L->stack.emplace_back(TValue("[Init] #Function Entry#"));
+    ci.func = &L->stack.front();
+    ci.func->setnil("[Init] #Function Entry#");
 
-    L->base = L->ci->base;
+    ci.base = ci.func + 1;
+    ci.top = ci.base + LUA_MINSTACK;
+
+    L->base = ci.base;
     L->top = L->base;
 }
 
@@ -81,13 +83,16 @@ int lua_State::traverse(global_State* g) {
     gt(this)->markvalue(g);
 
     TValue* lim = top;
-    for (CallInfo* it = base_ci.data(); it <= ci; it++)
+    for (const auto& ci : base_ci)
         if (lim < top)
-            lim = ci->top;
+            lim = ci.top;
 
-    TValue* o = stack.data();
+    /*for (TValue* o = &stack.front(); o < lim; o++)
+        o->gc->trymark(g); */
+
+    TValue* o = &stack.front();
     for (; o < top; o++)
-        o->gc->trymark(g);
+        o->markvalue(g);
 
     for (; o <= lim; o++)
         o->setnil();

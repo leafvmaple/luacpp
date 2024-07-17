@@ -129,7 +129,6 @@ struct lua_State : GCheader
     std::vector<CallInfo> base_ci;
 
     global_State* l_G          = nullptr;
-    CallInfo* ci               = nullptr;
     const Instruction* savedpc = nullptr; // 当前函数的起始指令
 
     unsigned short nCcalls     = 0;

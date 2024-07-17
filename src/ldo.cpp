@@ -8,19 +8,18 @@
 // |          | L->base  | ... | L->top |
 // 准备L->ci
 int LClosure::precall(lua_State* L, TValue* func, int nresults) {
-    CallInfo* ci = nullptr;
 
-    L->ci->savedpc = L->savedpc;
+    L->base_ci.back().savedpc = L->savedpc;
 
-    ci = ++L->ci;
-    ci->func = func;
-    ci->base = ci->func + 1;
-    // TODO
-    ci->top = L->top + LUA_MINSTACK;
+    auto& ci = L->base_ci.emplace_back();
+    ci.func = func;
+    ci.base = ci.func + 1;
+    ci.top = L->top + LUA_MINSTACK;
+    ci.top = L->stack._Unchecked_end();
 
-    L->base = ci->base;
-    L->top = ci->top;
-    L->savedpc = p->code.data();
+    L->base = ci.base;
+    L->top = ci.top;
+    L->savedpc = &p->code.front();
 
     execute(L, 1);
 
@@ -30,17 +29,15 @@ int LClosure::precall(lua_State* L, TValue* func, int nresults) {
 // 准备L->ci
 int CClosure::precall(lua_State* L, TValue* func, int nresults) {
     int n = 0;
-    CallInfo* ci = nullptr;
 
-    L->ci->savedpc = L->savedpc;
+    L->base_ci.back().savedpc = L->savedpc;
+    auto& ci = L->base_ci.emplace_back();
+    ci.func = func;
+    ci.base = ci.func + 1;
+    ci.top = L->top + LUA_MINSTACK;
+    ci.nresults = nresults;
 
-    ci = ++L->ci;
-    ci->func = func;
-    ci->base = ci->func + 1;
-    ci->top = L->top + LUA_MINSTACK;
-    ci->nresults = nresults;
-
-    L->base = ci->base;
+    L->base = ci.base;
     n = f(L);
     luaD_poscall(L, L->top - n);
 
@@ -56,17 +53,18 @@ void luaD_call(lua_State* L, TValue* func, int nResults) {
 }
 
 int luaD_poscall(lua_State* L, TValue* firstResult) {
-    TValue* res = nullptr;
-    CallInfo* ci = nullptr;
+    auto& ci = L->base_ci.back();
+    TValue* res = ci.func;
 
-    ci = L->ci--;
-    res = ci->func;
-    L->base = L->ci->base;
-    L->savedpc = L->ci->savedpc;
+    L->base = ci.base;
+    L->savedpc = ci.savedpc;
 
-    for (int i = ci->nresults; i != 0 && firstResult < L->top; i--)
+    for (int i = ci.nresults; i && firstResult < L->top; i--)
         *res++ = *firstResult++;
     L->top = res;
+
+    L->base_ci.pop_back();
+
     return 0;
 }
 

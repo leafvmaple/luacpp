@@ -19,7 +19,7 @@ TValue* index2adr(lua_State* L, int idx) {
         return registry(L);
     }
     case LUA_ENVIRONINDEX: {
-        Closure* func = static_cast<Closure*>(L->ci->func->gc);
+        Closure* func = static_cast<Closure*>(L->base_ci.back().func->gc);
         L->env.setvalue(func->env);
         return &L->env;
     }
@@ -34,7 +34,7 @@ TValue* index2adr(lua_State* L, int idx) {
 
 // 获取当前所在环境表
 Table* getcurrenv(lua_State* L) {
-    if (L->ci == &L->base_ci.front())
+    if (L->base_ci.size() == 1) // 堆栈层数为1，那么为全局环境
         return static_cast<Table*>(gt(L)->gc);
 }
 
