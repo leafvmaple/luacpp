@@ -25,8 +25,8 @@ static void markroot(lua_State* L) {
     g->gray.clear();
 
     g->mainthread->trymark(g);
-    gt(g->mainthread)->value.gc->trymark(g);
-    registry(L)->value.gc->trymark(g);
+    gt(g->mainthread)->markvalue(g);
+    registry(L)->markvalue(g);
 
     g->gcstate = GCSpropagate;
 }
@@ -87,6 +87,12 @@ void GCheader::link(lua_State* L) {
 void GCheader::trymark(global_State* g) {
     if (marked.iswhite())
         markobject(g);
+}
+
+void TValue::markvalue(global_State* g) {
+    if (tt >= LUA_TSTRING) {
+        gc->trymark(g);
+    }
 }
 
 void lua_Marked::towhite(global_State* g, bool reset) {

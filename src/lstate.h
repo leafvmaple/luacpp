@@ -13,6 +13,71 @@
 
 #define EXTRA_STACK   5
 
+#ifdef _DEBUG
+struct TValuePtr {
+    TValue* ptr = nullptr;
+
+    TValuePtr() = default;
+    TValuePtr(TValue* ptr) : ptr(ptr) {}
+
+    TValue& operator*() {
+        return *ptr;
+    }
+
+    TValue* operator->() {
+        return ptr;
+    }
+
+    operator TValue* () {
+        return ptr;
+    }
+
+    TValuePtr& operator++() {
+        ++ptr;
+        return *this;
+    }
+
+    TValuePtr operator++(int) {
+        TValuePtr tmp = *this;
+        ++ptr;
+        return tmp;
+    }
+
+    // --it;
+    TValuePtr& operator--() {
+        ptr--->setnil();
+        return *this;
+    }
+
+    // it--;
+    TValuePtr operator--(int) {
+        return ptr--;
+    }
+
+    TValuePtr operator+(int n) {
+        return ptr + n;
+    }
+
+    TValuePtr operator-(int n) {
+        return ptr - n;
+    }
+
+    TValuePtr& operator+=(int n) {
+        if (n < 0)
+            return operator-=(-n);
+        return *this;
+    }
+
+    TValuePtr& operator-=(int n) {
+        while (n--)
+            ptr--->setnil();
+        return *this;
+    }
+};
+#else
+typedef TValue* TValuePtr;
+#endif
+
 struct CallInfo
 {
     TValue* top  = nullptr;
@@ -57,7 +122,7 @@ struct global_State
 
 struct lua_State : GCheader
 {
-    TValue* top  = nullptr;
+    TValuePtr top = nullptr;
     TValue* base = nullptr;
 
     std::vector<TValue> stack;

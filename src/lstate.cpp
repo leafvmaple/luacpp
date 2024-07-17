@@ -26,7 +26,7 @@ void stack_init(lua_State* L) {
     L->stack.resize(BASIC_STACK_SIZE + EXTRA_STACK);
 
     L->ci->func = &L->stack.front();
-    L->ci->func->setnil("#[stack_init] Function Entry#");
+    L->ci->func->setnil("[Init] #Function Entry#");
     L->ci->base = L->ci->func + 1;
     L->ci->top = L->ci->base + LUA_MINSTACK;
 
@@ -37,8 +37,8 @@ void stack_init(lua_State* L) {
 void f_luaopen(lua_State* L) {
     stack_init(L);
 
-    gt(L)->setvalue(new (L) Table(L, 0, 2));
-    registry(L)->setvalue(new (L) Table(L, 0, 2));
+    gt(L)->setvalue(new (L) Table(L, 0, 2), "#Global Table#");
+    registry(L)->setvalue(new (L) Table(L, 0, 2), "Registry Table");
     strtab(L)->resize(MINSTRTABSIZE);
 
     luaT_init(L);
@@ -78,7 +78,7 @@ int lua_State::traverse(global_State* g) {
     g->gray.pop_front();
     // marked.togray(); ?
 
-    gt(this)->value.gc->trymark(g);
+    gt(this)->markvalue(g);
 
     TValue* lim = top;
     for (CallInfo* it = base_ci.data(); it <= ci; it++)
@@ -87,7 +87,7 @@ int lua_State::traverse(global_State* g) {
 
     TValue* o = stack.data();
     for (; o < top; o++)
-        o->value.gc->trymark(g);
+        o->gc->trymark(g);
 
     for (; o <= lim; o++)
         o->setnil();

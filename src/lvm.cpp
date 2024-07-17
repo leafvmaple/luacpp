@@ -11,7 +11,6 @@ int TValue::tostring(lua_State* L) {
         return 0;
     {
         char s[LUAI_MAXNUMBER2STR];
-        lua_Number n = value.n;
         lua_number2str(s, n);
         setvalue(strtab(L)->newstr(L, s), s);
         return 1;
@@ -53,7 +52,7 @@ void LClosure::execute(lua_State* L, int nexeccalls) {
             if (b != 0)
                 L->top = ra + b;
             L->savedpc = pc;
-            Closure* c = static_cast<Closure*>(ra->value.gc);
+            Closure* c = static_cast<Closure*>(ra->gc);
             c->precall(L, ra, 0);
             continue;
         }

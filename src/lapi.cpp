@@ -19,7 +19,7 @@ TValue* index2adr(lua_State* L, int idx) {
         return registry(L);
     }
     case LUA_ENVIRONINDEX: {
-        Closure* func = static_cast<Closure*>(L->ci->func->value.gc);
+        Closure* func = static_cast<Closure*>(L->ci->func->gc);
         L->env.setvalue(func->env);
         return &L->env;
     }
@@ -35,7 +35,7 @@ TValue* index2adr(lua_State* L, int idx) {
 // 获取当前所在环境表
 Table* getcurrenv(lua_State* L) {
     if (L->ci == &L->base_ci.front())
-        return static_cast<Table*>(gt(L)->value.gc);
+        return static_cast<Table*>(gt(L)->gc);
 }
 
 // 将C函数压栈并调用
@@ -93,7 +93,7 @@ void lua_pushcfunction(lua_State* L, lua_CFunction f, _IMPL) {
 }
 
 void lua_settable(lua_State* L, int idx) {
-    Table* t = ((Table*)index2adr(L, idx)->value.gc);
+    Table* t = ((Table*)index2adr(L, idx)->gc);
     TValue* value = --L->top;
     TValue* key = --L->top;
 
@@ -101,7 +101,7 @@ void lua_settable(lua_State* L, int idx) {
 }
 
 void lua_setfield(lua_State* L, int idx, const char* k) {
-    Table* t = ((Table*)index2adr(L, idx)->value.gc);
+    Table* t = ((Table*)index2adr(L, idx)->gc);
     TValue key(strtab(L)->newstr(L, k), k);
 
     (*t)[&key] = *--L->top;
@@ -116,21 +116,21 @@ void* lua_touserdata(lua_State* L, int idx) {
 
     switch (o->tt) {
     case LUA_TLIGHTUSERDATA:
-        return o->value.p;
+        return o->p;
     default:
         return nullptr;
     }
 }
 
 void lua_gettable(lua_State* L, int idx) {
-    Table* t = ((Table*) index2adr(L, idx)->value.gc);
+    Table* t = ((Table*) index2adr(L, idx)->gc);
     TValue* key = L->top - 1;
 
     *(key) = (*t)[key];
 }
 
 void lua_getfield(lua_State* L, int idx, const char* k) {
-    Table* t = ((Table*)index2adr(L, idx)->value.gc);
+    Table* t = ((Table*)index2adr(L, idx)->gc);
     TValue key(strtab(L)->newstr(L, k));
 
     *L->top++ = (*t)[&key];
@@ -154,7 +154,8 @@ void lua_pop(lua_State* L, int n) {
 
 void lua_remove(lua_State* L, int idx) {
     TValue* p = index2adr(L, idx);
-    while (++p < L->top) *(p - 1) = *p;
+    while (++p < L->top)
+        *(p - 1) = *p;
     L->top--;
 }
 
@@ -198,7 +199,7 @@ const char* lua_tolstring(lua_State* L, int idx, size_t* len){
     TValue* o = index2adr(L, idx);
     if (!ttisstring(o))
         o->tostring(L);
-    TString* ts = static_cast<TString*>(o->value.gc);
+    TString* ts = static_cast<TString*>(o->gc);
     if (len)
         *len = ts->s.size();
     return ts->s.c_str();

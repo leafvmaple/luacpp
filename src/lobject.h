@@ -124,6 +124,9 @@ struct lua_Marked {
 };
 
 struct GCheader {
+#ifdef _DEBUG
+    std::string name;
+#endif
     lua_Marked marked;
 
     virtual void markobject(global_State* g);
@@ -135,52 +138,56 @@ struct GCheader {
     virtual ~GCheader() {}
 };
 
-union Value {
-    GCheader* gc = nullptr;  // 非内置类型，只存指针，需要GC
-    void* p;
-    lua_Number n;
-    int b;
-};
-
-
 #ifdef _DEBUG
-#define _SET_DEBUG_NAME if (debug) {((this->name) = (debug));}
+#define _SET_DEBUG_NAME if (debug) { \
+    ((this->name) = (debug));        \
+    if (tt >= LUA_TSTRING) ((gc->name) = (debug));  \
+}
 #else
 #define _SET_DEBUG_NAME
 #endif
 
 // Value With Type
 struct TValue {
-    Value value;
+    union {
+        GCheader* gc = nullptr;  // 非内置类型，只存指针，需要GC
+        void* p;
+        lua_Number n;
+        int b;
+    };
     TVALUE_TYPE tt = LUA_TNIL;
 
 #ifdef _DEBUG
     std::string name;
 #endif
 
-    void setnil(_NAME) { _SET_DEBUG_NAME
+    void setnil(_NAME) { 
         tt = LUA_TNIL;
 #ifdef _DEBUG
-        value.gc = nullptr; // Debug 模式下清理数据
+        gc = nullptr; // Debug 模式下清理数据
 #endif
+    _SET_DEBUG_NAME
     }
-
-    void setvalue(const lua_Number n, _NAME) { _SET_DEBUG_NAME
+    void setvalue(const lua_Number _n, _NAME) { 
         tt = LUA_TNUMBER;
-        value.n = n;
+        n = _n;
+    _SET_DEBUG_NAME
     }
-    void setvalue(void* p, _NAME) { _SET_DEBUG_NAME
+    void setvalue(void* _p, _NAME) { 
         tt = LUA_TLIGHTUSERDATA;
-        value.p = p;
+        p = _p;
+    _SET_DEBUG_NAME
     }
-    void setvalue(const bool b, _NAME) { _SET_DEBUG_NAME
+    void setvalue(const bool _b, _NAME) {
         tt = LUA_TBOOLEAN;
-        value.b = b;
+        b = _b;
+    _SET_DEBUG_NAME
     }
     template<typename T>
-    void setvalue(const T* x, _NAME) { _SET_DEBUG_NAME
+    void setvalue(const T* x, _NAME) {
         tt = TVALUE_TYPE(T::t);
-        value.gc = const_cast<T*>(x);
+        gc = const_cast<T*>(x);
+    _SET_DEBUG_NAME
     }
 
     int tostring(lua_State* L);
@@ -194,7 +201,7 @@ struct TValue {
 
     ~TValue() {}
 
-    bool operator==(const TValue& k) const;
+    void markvalue(global_State* g);
 };
 
 struct TString: GCheader {
@@ -214,10 +221,10 @@ struct TString: GCheader {
 inline size_t keyhash(const TValue& k) {
     switch (k.tt) {
     case LUA_TNUMBER: {
-        return (size_t)k.value.n;
+        return (size_t)k.n;
     }
     case LUA_TSTRING: {
-        TString* ts = (TString*)k.value.gc;
+        TString* ts = (TString*)k.gc;
         return std::hash<std::string>{}(ts->s);
     }
     default: {
@@ -226,20 +233,10 @@ inline size_t keyhash(const TValue& k) {
     }
 }
 
-inline bool TValue::operator==(const TValue& k) const {
-    return keyhash(*this) == keyhash(k);
-}
-
-struct KeyFunction {
-    size_t operator()(const TValue& k) const {
-        return keyhash(k);
-    }
-};
-
 struct Table : GCheader {
     Table* metatable = nullptr;
     std::vector<TValue> array;
-    std::unordered_map<const TValue, TValue, KeyFunction> node;
+    std::unordered_map<size_t, std::pair<TValue, TValue>> node;
 
     lua_State* L = nullptr;
     GCheader* gclist = nullptr;
