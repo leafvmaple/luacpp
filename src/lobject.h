@@ -94,7 +94,6 @@ typedef std::unordered_map<size_t, lua_GCList> lua_GCHash;
 
 typedef double lua_Number;
 
-
 void* operator new(std::size_t size, lua_State* L);
 void operator delete(void* p, lua_State* L) noexcept;
 
@@ -269,8 +268,7 @@ struct Table : GCheader {
 };
 
 struct Closure : GCheader {
-    GCObject* gclist  = nullptr;
-    Table*    env     = nullptr;
+    Table* env = nullptr;
 
     enum { t = LUA_TFUNCTION };
 

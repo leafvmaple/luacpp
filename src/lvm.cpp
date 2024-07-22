@@ -40,7 +40,7 @@ void LClosure::execute(lua_State* L, int nexeccalls) {
         case OP_RETURN: {
             int b = i.b;
             if (b != 0)
-                L->top = ra + b - 1;
+                L->stack.settop(ra + b - 1);
             L->savedpc = pc;
             // b = luaD_poscall(L, ra);
             if (--nexeccalls == 0)  /* was previous function running `here'? */
@@ -49,11 +49,12 @@ void LClosure::execute(lua_State* L, int nexeccalls) {
         case OP_CALL: {
             // b为函数名+参数个数
             int b = i.b;
+            int nresults = i.c - 1;
             if (b != 0)
-                L->top = ra + b;
+                L->stack.settop(ra + b);
             L->savedpc = pc;
             Closure* c = static_cast<Closure*>(ra->gc);
-            c->precall(L, ra, 0);
+            c->precall(L, ra, nresults);
             continue;
         }
         case OP_SETGLOBAL: {

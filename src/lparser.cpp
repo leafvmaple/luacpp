@@ -92,14 +92,17 @@ void LexState::openfunc(FuncState* fs) {
     fs->ls = this;
     this->fs = fs;
 
-    L->top++->setvalue(fs->h, "#[Open Function] Const String Table#");
-    L->top++->setvalue(fs->f, "#[Open Function] Proto#");
+    L->stack.emplace_back(TValue(fs->h, "[Open Function] Const String Table"));
+    L->stack.emplace_back(TValue(fs->f, "[Open Function] Proto"));
 }
 
 void LexState::closefunc() {
     fs->ret(0, 0);  /* final return */
     fs = fs->prev;
-    L->top -= 2;  /* remove table and prototype from the stack */
+
+    L->stack.pop_back();
+    L->stack.pop_back();
+    /* remove table and prototype from the stack */
     /* last token read was anchored in defunct function; must reanchor it */
 }
 

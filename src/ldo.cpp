@@ -10,15 +10,13 @@
 int LClosure::precall(lua_State* L, TValue* func, int nresults) {
 
     L->base_ci.back().savedpc = L->savedpc;
+    L->stack.resize(L->stack.size() + LUA_MINSTACK);
 
     auto& ci = L->base_ci.emplace_back();
     ci.func = func;
     ci.base = ci.func + 1;
-    ci.top = L->top + LUA_MINSTACK;
-    ci.top = L->stack._Unchecked_end();
 
     L->base = ci.base;
-    L->top = ci.top;
     L->savedpc = &p->code.front();
 
     execute(L, 1);
@@ -34,12 +32,13 @@ int CClosure::precall(lua_State* L, TValue* func, int nresults) {
     auto& ci = L->base_ci.emplace_back();
     ci.func = func;
     ci.base = ci.func + 1;
-    ci.top = L->top + LUA_MINSTACK;
     ci.nresults = nresults;
 
     L->base = ci.base;
+
     n = f(L);
-    luaD_poscall(L, L->top - n);
+
+    luaD_poscall(L, L->stack._Unchecked_end() - n);
 
     return PCRC;
 }
@@ -55,15 +54,18 @@ void luaD_call(lua_State* L, TValue* func, int nResults) {
 int luaD_poscall(lua_State* L, TValue* firstResult) {
     auto& ci = L->base_ci.back();
     TValue* res = ci.func;
-
-    L->base = ci.base;
-    L->savedpc = ci.savedpc;
-
-    for (int i = ci.nresults; i && firstResult < L->top; i--)
-        *res++ = *firstResult++;
-    L->top = res;
+    int wanted = ci.nresults;
 
     L->base_ci.pop_back();
+    auto& prev = L->base_ci.back();
+
+    L->base = prev.base;
+    L->savedpc = prev.savedpc;
+
+    for (int i = wanted; i && firstResult < L->stack._Unchecked_end(); i--)
+        *res++ = *firstResult++;
+
+    L->stack.settop(res);
 
     return 0;
 }
@@ -77,7 +79,7 @@ void f_parser(lua_State* L, SParser* p) {
     Proto* tf = luaY_parser(L, p->z, p->name);
     LClosure* cl = new (L) LClosure(L, 0, static_cast<Table*>(gt(L)->gc)); // 环境表为全局表
     cl->p = tf;
-    L->top++->setvalue(cl);
+    L->stack.emplace_back(TValue(cl, p->name));
 }
 
 int luaD_protectedparser(lua_State* L, ZIO* z, const char* name) {

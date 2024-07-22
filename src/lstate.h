@@ -13,80 +13,31 @@
 
 #define EXTRA_STACK   5
 
-#ifdef _DEBUG
-struct TValuePtr {
-    TValue* ptr = nullptr;
-
-    TValuePtr() = default;
-    TValuePtr(TValue* ptr) : ptr(ptr) {}
-
-    TValue& operator*() {
-        return *ptr;
-    }
-
-    TValue* operator->() {
-        return ptr;
-    }
-
-    operator TValue* () {
-        return ptr;
-    }
-
-    TValuePtr& operator++() {
-        ++ptr;
-        return *this;
-    }
-
-    TValuePtr operator++(int) {
-        TValuePtr tmp = *this;
-        ++ptr;
-        return tmp;
-    }
-
-    // --it;
-    TValuePtr& operator--() {
-        ptr--->setnil();
-        return *this;
-    }
-
-    // it--;
-    TValuePtr operator--(int) {
-        return ptr--;
-    }
-
-    TValuePtr operator+(int n) {
-        return ptr + n;
-    }
-
-    TValuePtr operator-(int n) {
-        return ptr - n;
-    }
-
-    TValuePtr& operator+=(int n) {
-        if (n < 0)
-            return operator-=(-n);
-        return *this;
-    }
-
-    TValuePtr& operator-=(int n) {
-        while (n--)
-            ptr--->setnil();
-        return *this;
-    }
-};
-#else
-typedef TValue* TValuePtr;
-#endif
-
 struct CallInfo
 {
-    TValue* top  = nullptr;
     TValue* base = nullptr;
     TValue* func = nullptr;
 
     int nresults = 0; // 这个函数调用接受多少个返回值
 
     const Instruction* savedpc = nullptr; // 保存上一个PC
+};
+
+template<typename T>
+struct lua_stack : std::vector<T> {
+    void settop(const T* top) {
+        // 为什么要加this->？
+        this->resize(top - &this->front());
+    }
+    // TODO
+    auto pop() {
+        auto ret = this->back();
+        this->pop_back();
+        return ret;
+    }
+    /*void end() {
+        return this->_Unchecked_end();
+    }*/
 };
 
 struct stringtable {
@@ -122,11 +73,10 @@ struct global_State
 
 struct lua_State : GCheader
 {
-    TValuePtr top = nullptr;
     TValue* base = nullptr;
 
-    std::vector<TValue> stack;
-    std::vector<CallInfo> base_ci;
+    lua_stack<TValue> stack;
+    lua_stack<CallInfo> base_ci;
 
     global_State* l_G          = nullptr;
     const Instruction* savedpc = nullptr; // 当前函数的起始指令

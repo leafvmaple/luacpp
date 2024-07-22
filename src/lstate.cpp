@@ -22,18 +22,14 @@ void preinit_state(lua_State* L, global_State* g) {
 void stack_init(lua_State* L) {
     // prevent capacity from changing
     L->base_ci.reserve(BASIC_CI_SIZE);
-    L->stack.resize(BASIC_STACK_SIZE + EXTRA_STACK);
+    L->stack.reserve(BASIC_STACK_SIZE + EXTRA_STACK);
 
     auto& ci = L->base_ci.emplace_back();
-    // ci.func = &L->stack.emplace_back(TValue("[Init] #Function Entry#"));
-    ci.func = &L->stack.front();
-    ci.func->setnil("[Init] #Function Entry#");
+    ci.func = &L->stack.emplace_back(TValue("[Init] #Function Entry#"));
 
     ci.base = ci.func + 1;
-    ci.top = ci.base + LUA_MINSTACK;
 
     L->base = ci.base;
-    L->top = L->base;
 }
 
 void f_luaopen(lua_State* L) {
@@ -82,20 +78,8 @@ int lua_State::traverse(global_State* g) {
 
     gt(this)->markvalue(g);
 
-    TValue* lim = top;
-    for (const auto& ci : base_ci)
-        if (lim < top)
-            lim = ci.top;
-
-    /*for (TValue* o = &stack.front(); o < lim; o++)
-        o->gc->trymark(g); */
-
-    TValue* o = &stack.front();
-    for (; o < top; o++)
-        o->markvalue(g);
-
-    for (; o <= lim; o++)
-        o->setnil();
+    for (auto& o : stack)
+        o.gc->trymark(g);
 
     return 0;
 }

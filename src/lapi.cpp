@@ -12,7 +12,7 @@ TValue* index2adr(lua_State* L, int idx) {
         return L->base + (idx - 1);
     }
     else if (idx > LUA_REGISTRYINDEX) {
-        return L->top + idx;
+        return L->stack._Unchecked_end() + idx;
     }
     else switch (idx) {  /* pseudo-indices */
     case LUA_REGISTRYINDEX: {
@@ -44,9 +44,9 @@ Table* getcurrenv(lua_State* L) {
 static void f_Ccall(lua_State* L, CCallS* c) {
     CClosure* cl = new (L) CClosure(L, 0, getcurrenv(L));
     cl->f = c->func;
-    L->top++->setvalue(cl, "#[Call] CClosure#");
-    L->top++->setvalue(c->ud, "#[Call] UsderData#");
-    luaD_call(L, L->top - 2, 0); // 指向cl
+    L->stack.emplace_back(TValue(cl, "[Call] CClosure"));
+    L->stack.emplace_back(TValue(c->ud, "[Call] UsderData"));
+    luaD_call(L, L->stack._Unchecked_end() - 2, 0); // 指向cl
 }
 
 int lua_gc(lua_State* L, int what, int data) {
@@ -61,11 +61,11 @@ int lua_gc(lua_State* L, int what, int data) {
 }
 
 void lua_pushnil(lua_State* L) {
-    L->top++->setnil();
+    L->stack.emplace_back(TValue());
 }
 
 void lua_pushlstring(lua_State* L, const char* s, size_t l, _IMPL) {
-    L->top++->setvalue(strtab(L)->newlstr(L, s, l), debug ? debug : s);
+    L->stack.emplace_back(TValue(strtab(L)->newlstr(L, s, l), debug ? debug : s));
 }
 
 void lua_pushstring(lua_State* L, const char* s, _IMPL) {
@@ -76,16 +76,15 @@ void lua_pushstring(lua_State* L, const char* s, _IMPL) {
 }
 
 void lua_pushvalue(lua_State* L, int idx) {
-    *L->top++ = *index2adr(L, idx);
+    L->stack.push_back(*index2adr(L, idx));
 }
 
 void lua_pushcclosure(lua_State* L, lua_CFunction fn, int n, _IMPL) {
     CClosure* cl = new (L) CClosure(L, n, getcurrenv(L));
     cl->f = fn;
-    L->top -= n;
     while (n--)
-        cl->upvalue[n] = *(L->top + n);
-    L->top++->setvalue(cl, debug);
+        cl->upvalue[n] = L->stack.pop();
+    L->stack.emplace_back(TValue(cl, debug));
 }
 
 void lua_pushcfunction(lua_State* L, lua_CFunction f, _IMPL) {
@@ -94,21 +93,21 @@ void lua_pushcfunction(lua_State* L, lua_CFunction f, _IMPL) {
 
 void lua_settable(lua_State* L, int idx) {
     Table* t = ((Table*)index2adr(L, idx)->gc);
-    TValue* value = --L->top;
-    TValue* key = --L->top;
+    TValue value = L->stack.pop();
+    TValue key = L->stack.pop();
 
-    (*t)[key] = *value;
+    (*t)[&key] = value;
 }
 
 void lua_setfield(lua_State* L, int idx, const char* k) {
     Table* t = ((Table*)index2adr(L, idx)->gc);
     TValue key(strtab(L)->newstr(L, k), k);
 
-    (*t)[&key] = *--L->top;
+    (*t)[&key] = L->stack.pop();
 }
 
 void lua_createtable(lua_State* L, int narr, int nrec, _IMPL) {
-    L->top++->setvalue(new (L) Table(L, narr, nrec), debug);
+    L->stack.emplace_back(TValue(new (L) Table(L, narr, nrec), debug));
 }
 
 void* lua_touserdata(lua_State* L, int idx) {
@@ -124,7 +123,7 @@ void* lua_touserdata(lua_State* L, int idx) {
 
 void lua_gettable(lua_State* L, int idx) {
     Table* t = ((Table*) index2adr(L, idx)->gc);
-    TValue* key = L->top - 1;
+    TValue* key = &L->stack.back();
 
     *(key) = (*t)[key];
 }
@@ -133,19 +132,22 @@ void lua_getfield(lua_State* L, int idx, const char* k) {
     Table* t = ((Table*)index2adr(L, idx)->gc);
     TValue key(strtab(L)->newstr(L, k));
 
-    *L->top++ = (*t)[&key];
+    L->stack.push_back((*t)[&key]);
 }
 
 int lua_gettop(lua_State* L) {
-    return static_cast<int>(L->top - L->base);
+    return static_cast<int>(L->stack._Unchecked_end() - L->base);
 }
 
 void lua_settop(lua_State* L, int idx) {
+    int nSize = 0;
     if (idx >= 0)
-        while (L->top < L->base + idx)
-            L->top++->setnil();
+        // TODO
+        nSize = L->base - &L->stack.front() + idx;
     else
-        L->top += idx + 1;
+        nSize = L->stack.size() + idx + 1;
+
+    L->stack.resize(nSize);
 }
 
 void lua_pop(lua_State* L, int n) {
@@ -154,9 +156,9 @@ void lua_pop(lua_State* L, int n) {
 
 void lua_remove(lua_State* L, int idx) {
     TValue* p = index2adr(L, idx);
-    while (++p < L->top)
+    while (++p < L->stack._Unchecked_end())
         *(p - 1) = *p;
-    L->top--;
+    L->stack.pop_back();
 }
 
 bool lua_isnil(lua_State* L, int idx) {
@@ -173,7 +175,7 @@ int lua_type(lua_State* L, int idx) {
 }
 
 void lua_call(lua_State* L, int nargs, int nresults) {
-    TValue* func = L->top - (nargs + 1);
+    TValue* func = &L->stack.back() - nargs;
     luaD_call(L, func, nresults);
 }
 
