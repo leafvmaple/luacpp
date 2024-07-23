@@ -94,6 +94,27 @@ typedef std::unordered_map<size_t, lua_GCList> lua_GCHash;
 
 typedef double lua_Number;
 
+template<typename T>
+struct lua_stack : std::vector<T> {
+    void settop(const T* top) {
+        // 为什么要加this->？
+        this->resize(top - &this->front());
+    }
+    // TODO
+    const T pop(int n = 1) {
+        const T ret = this->operator[](this->size() - n);
+        while (n--)
+            this->pop_back();
+        return ret;
+    }
+    void expand(int diff) {
+        this->resize(this->size() + diff);
+    }
+    auto top() {
+        return this->_Unchecked_end();
+    }
+};
+
 void* operator new(std::size_t size, lua_State* L);
 void operator delete(void* p, lua_State* L) noexcept;
 

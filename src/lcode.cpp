@@ -13,16 +13,17 @@ Instruction& FuncState::getcode(expdesc* e) {
 // h[k] = idx
 // f->k[idx] = v
 int FuncState::addk(TValue* k, TValue* v) {
-    int nk = (int)f->k.size();
+    size_t nk = f->k.size();
     h->set(L, k, (lua_Number)nk);
     f->k.emplace_back(*v);
     return nk;
 }
 
 int FuncState::code(Instruction i, int line) {
+    int count = f->code.size();
     f->code.emplace_back(i);
     f->lineinfo.emplace_back(line);
-    return f->code.size() - 1;
+    return count;
 }
 
 void FuncState::discharge2reg(expdesc* e, int reg) {

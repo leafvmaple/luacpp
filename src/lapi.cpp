@@ -12,7 +12,7 @@ TValue* index2adr(lua_State* L, int idx) {
         return L->base + (idx - 1);
     }
     else if (idx > LUA_REGISTRYINDEX) {
-        return L->stack._Unchecked_end() + idx;
+        return L->stack.top() + idx;
     }
     else switch (idx) {  /* pseudo-indices */
     case LUA_REGISTRYINDEX: {
@@ -136,18 +136,15 @@ void lua_getfield(lua_State* L, int idx, const char* k) {
 }
 
 int lua_gettop(lua_State* L) {
-    return static_cast<int>(L->stack._Unchecked_end() - L->base);
+    return static_cast<int>(L->stack.size());
 }
 
 void lua_settop(lua_State* L, int idx) {
     int nSize = 0;
     if (idx >= 0)
-        // TODO
-        nSize = L->base - &L->stack.front() + idx;
+        L->stack.settop(L->base + idx);
     else
-        nSize = L->stack.size() + idx + 1;
-
-    L->stack.resize(nSize);
+        L->stack.expand(idx + 1);
 }
 
 void lua_pop(lua_State* L, int n) {
@@ -156,9 +153,7 @@ void lua_pop(lua_State* L, int n) {
 
 void lua_remove(lua_State* L, int idx) {
     TValue* p = index2adr(L, idx);
-    while (++p < L->stack._Unchecked_end())
-        *(p - 1) = *p;
-    L->stack.pop_back();
+    L->stack.erase(p - L->stack.data() + L->stack.begin());
 }
 
 bool lua_isnil(lua_State* L, int idx) {

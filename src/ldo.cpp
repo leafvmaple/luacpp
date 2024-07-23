@@ -38,7 +38,7 @@ int CClosure::precall(lua_State* L, TValue* func, int nresults) {
 
     n = f(L);
 
-    luaD_poscall(L, L->stack._Unchecked_end() - n);
+    luaD_poscall(L, L->stack.top() - n);
 
     return PCRC;
 }
@@ -62,7 +62,7 @@ int luaD_poscall(lua_State* L, TValue* firstResult) {
     L->base = prev.base;
     L->savedpc = prev.savedpc;
 
-    for (int i = wanted; i && firstResult < L->stack._Unchecked_end(); i--)
+    for (int i = wanted; i && firstResult < L->stack.top(); i--)
         *res++ = *firstResult++;
 
     L->stack.settop(res);

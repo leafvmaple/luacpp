@@ -79,7 +79,7 @@ int lua_State::traverse(global_State* g) {
     gt(this)->markvalue(g);
 
     for (auto& o : stack)
-        o.gc->trymark(g);
+        o.markvalue(g);
 
     return 0;
 }

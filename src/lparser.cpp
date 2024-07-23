@@ -100,8 +100,7 @@ void LexState::closefunc() {
     fs->ret(0, 0);  /* final return */
     fs = fs->prev;
 
-    L->stack.pop_back();
-    L->stack.pop_back();
+    L->stack.pop(2);
     /* remove table and prototype from the stack */
     /* last token read was anchored in defunct function; must reanchor it */
 }

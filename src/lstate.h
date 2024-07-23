@@ -23,23 +23,6 @@ struct CallInfo
     const Instruction* savedpc = nullptr; // 保存上一个PC
 };
 
-template<typename T>
-struct lua_stack : std::vector<T> {
-    void settop(const T* top) {
-        // 为什么要加this->？
-        this->resize(top - &this->front());
-    }
-    // TODO
-    auto pop() {
-        auto ret = this->back();
-        this->pop_back();
-        return ret;
-    }
-    /*void end() {
-        return this->_Unchecked_end();
-    }*/
-};
-
 struct stringtable {
     // TODO
     lua_GCHash hash;
