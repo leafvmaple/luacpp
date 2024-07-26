@@ -46,7 +46,7 @@ static void f_Ccall(lua_State* L, CCallS* c) {
     cl->f = c->func;
     L->stack.emplace_back(TValue(cl, "[Call] CClosure"));
     L->stack.emplace_back(TValue(c->ud, "[Call] UsderData"));
-    luaD_call(L, L->stack._Unchecked_end() - 2, 0); // 指向cl
+    luaD_call(L, L->stack.top() - 2, 0); // 指向cl
 }
 
 int lua_gc(lua_State* L, int what, int data) {

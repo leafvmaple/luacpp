@@ -224,7 +224,7 @@ struct TValue {
     void markvalue(global_State* g);
 };
 
-struct TString: GCheader {
+struct TString : GCheader {
     RESERVED     reserved = TK_NONE;      // 字符串为系统保留标识符时不为0
     std::string  s;
 
