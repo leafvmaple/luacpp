@@ -42,8 +42,8 @@ enum TVALUE_TYPE {
 #define _NAME char const* debug = nullptr
 #define _IMPL char const* debug
 
-typedef std::function<int(lua_State*)> lua_CFunction;
-typedef const char* (*lua_Reader) (lua_State* L, void* ud, size_t* sz);
+using lua_CFunction = std::function<int(lua_State*)>;
+using lua_Reader = std::function<const char*(lua_State* L, void* ud, size_t* sz)>;
 
 lua_State* lua_newstate();
 

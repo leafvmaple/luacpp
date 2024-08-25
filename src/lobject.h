@@ -89,10 +89,10 @@ struct GCheader;
 struct TValue;
 union GCObject;
 
-typedef std::list<GCheader*> lua_GCList;
-typedef std::unordered_map<size_t, lua_GCList> lua_GCHash;
+using lua_GCList = std::list<GCheader*>;
+using lua_GCHash = std::unordered_map<size_t, lua_GCList>;
 
-typedef double lua_Number;
+using lua_Number = double;
 
 template<typename T>
 struct lua_stack : std::vector<T> {

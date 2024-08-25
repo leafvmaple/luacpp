@@ -5,11 +5,10 @@
 
 #include "lua.h"
 
-typedef unsigned char lu_byte;
-typedef unsigned int  lu_int32;
-typedef ptrdiff_t l_mem;
-
-typedef size_t lu_mem;
+using lu_byte = unsigned char;
+using lu_int32 = unsigned int;
+using l_mem = ptrdiff_t;
+using lu_mem = size_t;
 
 #ifndef MINSTRTABSIZE
 #define MINSTRTABSIZE	32
