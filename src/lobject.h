@@ -167,63 +167,6 @@ struct GCheader {
 #define _SET_DEBUG_NAME
 #endif
 
-// Value With Type
-struct TValue {
-    union {
-        GCheader* gc = nullptr;  // 非内置类型，只存指针，需要GC
-        void* p;
-        lua_Number n;
-        int b;
-    };
-    TVALUE_TYPE tt = LUA_TNIL;
-
-#ifdef _DEBUG
-    std::string name;
-#endif
-
-    void setnil(_NAME) { 
-        tt = LUA_TNIL;
-#ifdef _DEBUG
-        gc = nullptr; // Debug 模式下清理数据
-#endif
-    _SET_DEBUG_NAME
-    }
-    void setvalue(const lua_Number _n, _NAME) { 
-        tt = LUA_TNUMBER;
-        n = _n;
-    _SET_DEBUG_NAME
-    }
-    void setvalue(void* _p, _NAME) { 
-        tt = LUA_TLIGHTUSERDATA;
-        p = _p;
-    _SET_DEBUG_NAME
-    }
-    void setvalue(const bool _b, _NAME) {
-        tt = LUA_TBOOLEAN;
-        b = _b;
-    _SET_DEBUG_NAME
-    }
-    template<typename T>
-    void setvalue(const T* x, _NAME) {
-        tt = TVALUE_TYPE(T::t);
-        gc = const_cast<T*>(x);
-    _SET_DEBUG_NAME
-    }
-
-    int tostring(lua_State* L);
-
-    TValue(_NAME) { setnil(debug); }
-    explicit TValue(lua_Number n, _NAME) { setvalue(n, debug); }
-    explicit TValue(void* p, _NAME) { setvalue(p, debug); }
-    explicit TValue(const bool b, _NAME) { setvalue(b, debug); }
-    template<typename T>
-    explicit TValue(const T* x, _NAME) { setvalue(x, debug); }
-
-    ~TValue() {}
-
-    void markvalue(global_State* g);
-};
-
 struct TString : GCheader {
     RESERVED     reserved = TK_NONE;      // 字符串为系统保留标识符时不为0
     std::string  s;
@@ -238,20 +181,78 @@ struct TString : GCheader {
     }
 };
 
-inline size_t keyhash(const TValue& k) {
-    switch (k.tt) {
-    case LUA_TNUMBER: {
-        return (size_t)k.n;
+
+// Value With Type
+struct TValue {
+    union {
+        GCheader* gc = nullptr;  // 非内置类型，只存指针，需要GC
+        void* p;
+        lua_Number n;
+        int b;
+    };
+    TVALUE_TYPE tt = LUA_TNIL;
+
+#ifdef _DEBUG
+    std::string name;
+#endif
+
+    void setnil(_NAME) {
+        tt = LUA_TNIL;
+#ifdef _DEBUG
+        gc = nullptr; // Debug 模式下清理数据
+#endif
+        _SET_DEBUG_NAME
     }
-    case LUA_TSTRING: {
-        TString* ts = (TString*)k.gc;
-        return std::hash<std::string>{}(ts->s);
+    void setvalue(const lua_Number _n, _NAME) {
+        tt = LUA_TNUMBER;
+        n = _n;
+        _SET_DEBUG_NAME
     }
-    default: {
-        return 0;
+    void setvalue(void* _p, _NAME) {
+        tt = LUA_TLIGHTUSERDATA;
+        p = _p;
+        _SET_DEBUG_NAME
     }
+    void setvalue(const bool _b, _NAME) {
+        tt = LUA_TBOOLEAN;
+        b = _b;
+        _SET_DEBUG_NAME
     }
-}
+    template<typename T>
+    void setvalue(const T* x, _NAME) {
+        tt = TVALUE_TYPE(T::t);
+        gc = const_cast<T*>(x);
+        _SET_DEBUG_NAME
+    }
+
+    int tostring(lua_State* L);
+
+    size_t hash() const {
+        switch (tt) {
+        case LUA_TNUMBER: {
+            return (size_t)n;
+        }
+        case LUA_TSTRING: {
+            TString* ts = (TString*)gc;
+            return std::hash<std::string>{}(ts->s);
+        }
+        default: {
+            return 0;
+        }
+        }
+    }
+
+    TValue(_NAME) { setnil(debug); }
+    explicit TValue(lua_Number n, _NAME) { setvalue(n, debug); }
+    explicit TValue(void* p, _NAME) { setvalue(p, debug); }
+    explicit TValue(const bool b, _NAME) { setvalue(b, debug); }
+    template<typename T>
+    explicit TValue(const T* x, _NAME) { setvalue(x, debug); }
+
+    ~TValue() {}
+
+    void markvalue(global_State* g);
+};
 
 struct Table : GCheader {
     Table* metatable = nullptr;

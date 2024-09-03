@@ -22,7 +22,7 @@ Table::Table(lua_State* _L, int narray, int nhash) {
 }
 
 TValue* newkey(lua_State* L, Table* t, const TValue* key) {
-    auto& kv = t->node[keyhash(*key)];
+    auto& kv = t->node[key->hash()];
     kv.first = *key;
     return &kv.second;
 }
@@ -37,7 +37,7 @@ const TValue* Table::getnum(int key) const {
 }
 
 const TValue* Table::getstr(const TString* key) const {
-    auto it = node.find(keyhash(TValue(key)));
+    auto it = node.find(TValue(key).hash());
     if (it != node.end())
         return &(*it).second.second;
     return luaO_nilobject;
