@@ -13,9 +13,7 @@ int zgetc(ZIO* z) {
 
 int luaZ_fill(ZIO* z) {
     size_t size = 0;
-    const char* buff = nullptr;
-
-    buff = z->reader(z->L, z->data, &size);
+    const char* buff = z->reader(z->L, z->data, &size);
     if (!buff || !size)
         return EOZ;
     z->n = size - 1;
