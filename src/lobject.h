@@ -181,7 +181,6 @@ struct TString : GCheader {
     }
 };
 
-
 // Value With Type
 struct TValue {
     union {

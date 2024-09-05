@@ -1,7 +1,7 @@
 #include "lgc.h"
 #include "lstate.h"
 
-#define GCSWEEPMAX	40
+constexpr int GCSWEEPMAX = 40;
 
 static lua_GCList::iterator sweeplist(lua_State* L, lua_GCList::iterator it, lua_GCList& list, lu_mem count) {
     global_State* g = G(L);
