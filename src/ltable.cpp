@@ -37,7 +37,7 @@ const TValue* Table::getnum(int key) const {
 }
 
 const TValue* Table::getstr(const TString* key) const {
-    auto it = node.find(TValue(key).hash());
+    auto it = node.find(key->hash());
     if (it != node.end())
         return &(*it).second.second;
     return luaO_nilobject;

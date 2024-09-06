@@ -136,7 +136,7 @@ void lua_getfield(lua_State* L, int idx, const char* k) {
 }
 
 int lua_gettop(lua_State* L) {
-    return static_cast<int>(L->stack.size());
+    return static_cast<int>(L->stack.top() - L->base);
 }
 
 void lua_settop(lua_State* L, int idx) {

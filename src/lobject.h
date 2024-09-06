@@ -151,21 +151,13 @@ struct GCheader {
 
     virtual void markobject(global_State* g);
     virtual int traverse(global_State* g);
+    virtual size_t hash() const { return 0; }
 
     void link(lua_State* L);
     void trymark(global_State* g);
 
     virtual ~GCheader() {}
 };
-
-#ifdef _DEBUG
-#define _SET_DEBUG_NAME if (debug) { \
-    ((this->name) = (debug));        \
-    if (tt >= LUA_TSTRING) ((gc->name) = (debug));  \
-}
-#else
-#define _SET_DEBUG_NAME
-#endif
 
 struct TString : GCheader {
     RESERVED     reserved = TK_NONE;      // 字符串为系统保留标识符时不为0
@@ -174,6 +166,10 @@ struct TString : GCheader {
     enum { t = LUA_TSTRING };
 
     TString(lua_State* L, const char* str, size_t l);
+
+    virtual size_t hash() const override {
+        return std::hash<std::string>::_Do_hash(s);
+    }
 
     // 设置不会GC
     void fix() {
@@ -195,58 +191,65 @@ struct TValue {
     std::string name;
 #endif
 
-    void setnil(_NAME) {
+    void setnil() {
         tt = LUA_TNIL;
-#ifdef _DEBUG
-        gc = nullptr; // Debug 模式下清理数据
-#endif
-        _SET_DEBUG_NAME
+        gc = nullptr;
     }
-    void setvalue(const lua_Number _n, _NAME) {
+    void setnil(const char* const debug) {
+#ifdef _DEBUG
+        name = debug;
+#endif
+        setnil();
+    }
+
+    void setvalue(const lua_Number _n) {
         tt = LUA_TNUMBER;
         n = _n;
-        _SET_DEBUG_NAME
     }
-    void setvalue(void* _p, _NAME) {
+    void setvalue(void* _p) {
         tt = LUA_TLIGHTUSERDATA;
         p = _p;
-        _SET_DEBUG_NAME
     }
-    void setvalue(const bool _b, _NAME) {
+    void setvalue(const bool _b) {
         tt = LUA_TBOOLEAN;
         b = _b;
-        _SET_DEBUG_NAME
     }
     template<typename T>
-    void setvalue(const T* x, _NAME) {
+    void setvalue(const T* x) {
         tt = TVALUE_TYPE(T::t);
         gc = const_cast<T*>(x);
-        _SET_DEBUG_NAME
+#ifdef _DEBUG
+        if (tt >= LUA_TSTRING)
+            gc->name = name;
+#endif
+    }
+
+    template<typename T>
+    void setvalue(T x, const char* const debug) {
+#ifdef _DEBUG
+        name = debug;
+#endif
+        setvalue(x);
     }
 
     int tostring(lua_State* L);
 
     size_t hash() const {
         switch (tt) {
-        case LUA_TNUMBER: {
-            return (size_t)n;
-        }
-        case LUA_TSTRING: {
-            TString* ts = (TString*)gc;
-            return std::hash<std::string>{}(ts->s);
-        }
-        default: {
-            return 0;
-        }
+        case LUA_TNUMBER:
+            return static_cast<size_t>(n);
+        default:
+            return gc->hash();
         }
     }
 
-    TValue(_NAME) { setnil(debug); }
-    explicit TValue(lua_Number n, _NAME) { setvalue(n, debug); }
-    explicit TValue(void* p, _NAME) { setvalue(p, debug); }
-    explicit TValue(const bool b, _NAME) { setvalue(b, debug); }
+    TValue() { setnil(); }
+    TValue(const char* const debug) { setnil(debug); }
+
     template<typename T>
-    explicit TValue(const T* x, _NAME) { setvalue(x, debug); }
+    explicit TValue(const T x) { setvalue(x); }
+    template<typename T>
+    explicit TValue(const T x, const char* const debug) { setvalue(x, debug); }
 
     ~TValue() {}
 
