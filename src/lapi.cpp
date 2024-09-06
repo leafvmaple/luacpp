@@ -101,9 +101,8 @@ void lua_settable(lua_State* L, int idx) {
 
 void lua_setfield(lua_State* L, int idx, const char* k) {
     Table* t = ((Table*)index2adr(L, idx)->gc);
-    TValue key(strtab(L)->newstr(L, k), k);
 
-    (*t)[&key] = L->stack.pop();
+    (*t)[strtab(L)->newstr(L, k)] = L->stack.pop();
 }
 
 void lua_createtable(lua_State* L, int narr, int nrec, _IMPL) {
@@ -130,9 +129,8 @@ void lua_gettable(lua_State* L, int idx) {
 
 void lua_getfield(lua_State* L, int idx, const char* k) {
     Table* t = ((Table*)index2adr(L, idx)->gc);
-    TValue key(strtab(L)->newstr(L, k));
 
-    L->stack.push_back((*t)[&key]);
+    L->stack.push_back((*t)[strtab(L)->newstr(L, k)]);
 }
 
 int lua_gettop(lua_State* L) {

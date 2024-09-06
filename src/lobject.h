@@ -86,8 +86,6 @@ enum GC_STATE {
 
 struct global_State;
 struct GCheader;
-struct TValue;
-union GCObject;
 
 using lua_GCList = std::list<GCheader*>;
 using lua_GCHash = std::unordered_map<size_t, lua_GCList>;
@@ -236,10 +234,8 @@ struct TValue {
 
     size_t hash() const {
         switch (tt) {
-        case LUA_TNUMBER:
-            return static_cast<size_t>(n);
-        default:
-            return gc->hash();
+        case LUA_TNUMBER: return static_cast<size_t>(n);
+        default: return gc->hash();
         }
     }
 
@@ -281,9 +277,18 @@ struct Table : GCheader {
     const TValue& operator[](const TValue* key) const {
         return *get(key);
     }
+    const TValue& operator[](lua_Number key) const {
+        return *getnum(static_cast<int>(key));
+    }
+    const TValue& operator[](const TString* key) const {
+        return *getstr(key);
+    }
 
     TValue& operator[](const TValue* key) {
         return *set(L, key);
+    }
+    TValue& operator[](const TString* key) {
+        return *setstr(L, key);
     }
 
     const TValue* getnum(int key) const;
