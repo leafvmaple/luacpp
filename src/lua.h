@@ -39,9 +39,6 @@ enum TVALUE_TYPE {
 #define LUA_GCSETPAUSE		6
 #define LUA_GCSETSTEPMUL	7
 
-#define _NAME char const* debug = nullptr
-#define _IMPL char const* debug
-
 using lua_CFunction = std::function<int(lua_State*)>;
 using lua_Reader = std::function<const char*(lua_State* L, void* ud, size_t* sz)>;
 
@@ -50,27 +47,23 @@ lua_State* lua_newstate();
 int lua_gc(lua_State* L, int what, int data);
 
 void lua_pushnil(lua_State* L);
-void lua_pushlstring(lua_State* L, const char* s, size_t l, _NAME);
-void lua_pushstring(lua_State* L, const char* s, _NAME);
+void lua_pushlstring(lua_State* L, const char* s, size_t l, char const* debug = nullptr);
+void lua_pushstring(lua_State* L, const char* s, char const* debug = nullptr);
 void lua_pushvalue(lua_State* L, int idx);
-void lua_pushcclosure(lua_State* L, lua_CFunction fn, int n, _NAME);
-void lua_pushcfunction(lua_State* L, lua_CFunction f, _NAME);
+void lua_pushcclosure(lua_State* L, lua_CFunction fn, int n, char const* debug = nullptr);
+void lua_pushcfunction(lua_State* L, lua_CFunction f, char const* debug = nullptr);
 
 void* lua_touserdata(lua_State* L, int idx);
 
 void lua_gettable(lua_State* L, int idx);
 void lua_getfield(lua_State* L, int idx, const char* k);
-inline void lua_getglobal(lua_State* L, const char* k) {
-    lua_getfield(L, LUA_GLOBALSINDEX, k);
-}
+void lua_getglobal(lua_State* L, const char* k);
 
 void lua_settable(lua_State* L, int idx);
 void lua_setfield(lua_State* L, int idx, const char* k);
-inline void lua_setglobal(lua_State* L, const char* s) {
-    lua_setfield(L, LUA_GLOBALSINDEX, s);
-}
+void lua_setglobal(lua_State* L, const char* s);
 
-void lua_createtable(lua_State* L, int narr, int nrec, _NAME);
+void lua_createtable(lua_State* L, int narr, int nrec, char const* debug = nullptr);
 
 int lua_gettop(lua_State* L);
 void lua_settop(lua_State* L, int idx);

@@ -46,7 +46,7 @@ const TValue* Table::getstr(const TString* key) const {
 const TValue* Table::get(const TValue* key) const {
     switch (key->tt) {
     case LUA_TNIL: return luaO_nilobject;
-    case LUA_TSTRING: return getstr((TString*)key->gc);
+    case LUA_TSTRING: return getstr(key->ts);
     case LUA_TNUMBER: return getnum(key->n);
     }
 }
@@ -56,7 +56,7 @@ int Table::traverse(global_State* g) {
     for (auto& v : array)
         v.gc->trymark(g);
     for (auto& [hash, p] : node) {
-        if (ttisnil(&p.second))
+        if (p.second.isnil())
             /* it = node.erase(it)*/;
         else {
             p.first.markvalue(g); // 不会改变key值

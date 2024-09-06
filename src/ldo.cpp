@@ -45,7 +45,7 @@ int CClosure::precall(lua_State* L, TValue* func, int nresults) {
 
 void luaD_call(lua_State* L, TValue* func, int nResults) {
     ++L->nCcalls;
-    Closure* c = static_cast<Closure*>(func->gc);
+    Closure* c = func->cl;
     c->precall(L, func, nResults);
 
     L->nCcalls--;
@@ -77,7 +77,7 @@ struct SParser {  /* data to `f_parser' */
 
 void f_parser(lua_State* L, SParser* p) {
     Proto* tf = luaY_parser(L, p->z, p->name);
-    LClosure* cl = new (L) LClosure(L, 0, static_cast<Table*>(gt(L)->gc)); // 环境表为全局表
+    LClosure* cl = new (L) LClosure(L, 0, gt(L)->h); // 环境表为全局表
     cl->p = tf;
     L->stack.emplace_back(TValue(cl, p->name));
 }

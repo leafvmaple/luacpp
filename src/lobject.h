@@ -157,23 +157,9 @@ struct GCheader {
     virtual ~GCheader() {}
 };
 
-struct TString : GCheader {
-    RESERVED     reserved = TK_NONE;      // 字符串为系统保留标识符时不为0
-    std::string  s;
-
-    enum { t = LUA_TSTRING };
-
-    TString(lua_State* L, const char* str, size_t l);
-
-    virtual size_t hash() const override {
-        return std::hash<std::string>::_Do_hash(s);
-    }
-
-    // 设置不会GC
-    void fix() {
-        marked.set(FIXEDBIT);
-    }
-};
+struct TString;
+struct Table;
+struct Closure;
 
 // Value With Type
 struct TValue {
@@ -182,6 +168,10 @@ struct TValue {
         void* p;
         lua_Number n;
         int b;
+
+        TString* ts;
+        Table* h;
+        Closure* cl;
     };
     TVALUE_TYPE tt = LUA_TNIL;
 
@@ -239,17 +229,44 @@ struct TValue {
         }
     }
 
+    inline bool isnil() const {
+        return tt == LUA_TNIL;
+    }
+
+    inline bool isnumber() const {
+        return tt == LUA_TNUMBER;
+    }
+    inline bool isstring() const {
+        return tt == LUA_TSTRING;
+    }
+
     TValue() { setnil(); }
     TValue(const char* const debug) { setnil(debug); }
 
-    template<typename T>
-    explicit TValue(const T x) { setvalue(x); }
-    template<typename T>
-    explicit TValue(const T x, const char* const debug) { setvalue(x, debug); }
+    template<typename T, typename... Args>
+    explicit TValue(const T x, Args... args) { setvalue(x, args...); }
 
     ~TValue() {}
 
     void markvalue(global_State* g);
+};
+
+struct TString : GCheader {
+    RESERVED     reserved = TK_NONE;      // 字符串为系统保留标识符时不为0
+    std::string  s;
+
+    enum { t = LUA_TSTRING };
+
+    TString(lua_State* L, const char* str, size_t l);
+
+    virtual size_t hash() const override {
+        return std::hash<std::string>::_Do_hash(s);
+    }
+
+    // 设置不会GC
+    void fix() {
+        marked.set(FIXEDBIT);
+    }
 };
 
 struct Table : GCheader {
@@ -349,17 +366,6 @@ struct LClosure : Closure {
     virtual int precall(lua_State* L, TValue* func, int nresults);
     void execute(lua_State* L, int nexeccalls);
 };
-
-inline bool ttisnil(TValue* obj) {
-    return obj->tt == LUA_TNIL;
-}
-
-inline bool ttisnumber(TValue* obj) {
-    return obj->tt == LUA_TNUMBER;
-}
-inline bool ttisstring(TValue* obj) {
-    return obj->tt == LUA_TSTRING;
-}
 
 const TValue luaO_nilobject_;
 #define luaO_nilobject (&luaO_nilobject_)

@@ -19,7 +19,7 @@ TValue* index2adr(lua_State* L, int idx) {
         return registry(L);
     }
     case LUA_ENVIRONINDEX: {
-        Closure* func = static_cast<Closure*>(L->base_ci.back().func->gc);
+        Closure* func = L->base_ci.back().func->cl;
         L->env.setvalue(func->env);
         return &L->env;
     }
@@ -35,7 +35,7 @@ TValue* index2adr(lua_State* L, int idx) {
 // 获取当前所在环境表
 Table* getcurrenv(lua_State* L) {
     if (L->base_ci.size() == 1) // 堆栈层数为1，那么为全局环境
-        return static_cast<Table*>(gt(L)->gc);
+        return gt(L)->h;
 }
 
 // 将C函数压栈并调用
@@ -64,11 +64,11 @@ void lua_pushnil(lua_State* L) {
     L->stack.emplace_back(TValue());
 }
 
-void lua_pushlstring(lua_State* L, const char* s, size_t l, _IMPL) {
+void lua_pushlstring(lua_State* L, const char* s, size_t l, char const* debug) {
     L->stack.emplace_back(TValue(strtab(L)->newlstr(L, s, l), debug ? debug : s));
 }
 
-void lua_pushstring(lua_State* L, const char* s, _IMPL) {
+void lua_pushstring(lua_State* L, const char* s, char const* debug) {
     if (s == nullptr)
         lua_pushnil(L);
     else
@@ -79,7 +79,7 @@ void lua_pushvalue(lua_State* L, int idx) {
     L->stack.push_back(*index2adr(L, idx));
 }
 
-void lua_pushcclosure(lua_State* L, lua_CFunction fn, int n, _IMPL) {
+void lua_pushcclosure(lua_State* L, lua_CFunction fn, int n, char const* debug) {
     CClosure* cl = new (L) CClosure(L, n, getcurrenv(L));
     cl->f = fn;
     while (n--)
@@ -87,12 +87,12 @@ void lua_pushcclosure(lua_State* L, lua_CFunction fn, int n, _IMPL) {
     L->stack.emplace_back(TValue(cl, debug));
 }
 
-void lua_pushcfunction(lua_State* L, lua_CFunction f, _IMPL) {
+void lua_pushcfunction(lua_State* L, lua_CFunction f, char const* debug) {
     lua_pushcclosure(L, f, 0, debug);
 }
 
 void lua_settable(lua_State* L, int idx) {
-    Table* t = ((Table*)index2adr(L, idx)->gc);
+    Table* t = index2adr(L, idx)->h;
     TValue value = L->stack.pop();
     TValue key = L->stack.pop();
 
@@ -100,12 +100,16 @@ void lua_settable(lua_State* L, int idx) {
 }
 
 void lua_setfield(lua_State* L, int idx, const char* k) {
-    Table* t = ((Table*)index2adr(L, idx)->gc);
+    Table* t = index2adr(L, idx)->h;
 
     (*t)[strtab(L)->newstr(L, k)] = L->stack.pop();
 }
 
-void lua_createtable(lua_State* L, int narr, int nrec, _IMPL) {
+void lua_setglobal(lua_State* L, const char* s) {
+    lua_setfield(L, LUA_GLOBALSINDEX, s);
+}
+
+void lua_createtable(lua_State* L, int narr, int nrec, char const* debug) {
     L->stack.emplace_back(TValue(new (L) Table(L, narr, nrec), debug));
 }
 
@@ -113,24 +117,26 @@ void* lua_touserdata(lua_State* L, int idx) {
     TValue* o = index2adr(L, idx);
 
     switch (o->tt) {
-    case LUA_TLIGHTUSERDATA:
-        return o->p;
-    default:
-        return nullptr;
+    case LUA_TLIGHTUSERDATA: return o->p;
+    default: return nullptr;
     }
 }
 
 void lua_gettable(lua_State* L, int idx) {
-    Table* t = ((Table*) index2adr(L, idx)->gc);
+    Table* t = index2adr(L, idx)->h;
     TValue* key = &L->stack.back();
 
     *(key) = (*t)[key];
 }
 
 void lua_getfield(lua_State* L, int idx, const char* k) {
-    Table* t = ((Table*)index2adr(L, idx)->gc);
+    Table* t = index2adr(L, idx)->h;
 
     L->stack.push_back((*t)[strtab(L)->newstr(L, k)]);
+}
+
+void lua_getglobal(lua_State* L, const char* k) {
+    lua_getfield(L, LUA_GLOBALSINDEX, k);
 }
 
 int lua_gettop(lua_State* L) {
@@ -192,9 +198,9 @@ int lua_load(lua_State* L, lua_Reader reader, void* data, const char* chunkname)
 
 const char* lua_tolstring(lua_State* L, int idx, size_t* len){
     TValue* o = index2adr(L, idx);
-    if (!ttisstring(o))
+    if (!o->isstring())
         o->tostring(L);
-    TString* ts = static_cast<TString*>(o->gc);
+    TString* ts = o->ts;
     if (len)
         *len = ts->s.size();
     return ts->s.c_str();

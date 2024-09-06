@@ -7,7 +7,7 @@
 #include "lopcodes.h"
 
 int TValue::tostring(lua_State* L) {
-    if (!ttisnumber(this))
+    if (!isnumber())
         return 0;
     {
         char s[LUAI_MAXNUMBER2STR];
@@ -53,7 +53,7 @@ void LClosure::execute(lua_State* L, int nexeccalls) {
             if (b != 0)
                 L->stack.settop(ra + b);
             L->savedpc = pc;
-            Closure* c = static_cast<Closure*>(ra->gc);
+            Closure* c = ra->cl;
             c->precall(L, ra, nresults);
             continue;
         }
