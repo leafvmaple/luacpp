@@ -21,8 +21,8 @@ void preinit_state(lua_State* L, global_State* g) {
 // 2. ³õÊ¼»¯stack
 void stack_init(lua_State* L) {
     // prevent capacity from changing
-    L->base_ci.reserve(BASIC_CI_SIZE);
-    L->stack.reserve(BASIC_STACK_SIZE + EXTRA_STACK);
+    L->base_ci.s.reserve(BASIC_CI_SIZE);
+    L->stack.s.reserve(BASIC_STACK_SIZE + EXTRA_STACK);
 
     auto& ci = L->base_ci.emplace_back();
     ci.func = &L->stack.emplace_back(TValue("[Init] #Function Entry#"));
@@ -78,7 +78,7 @@ int lua_State::traverse(global_State* g) {
 
     gt(this)->markvalue(g);
 
-    for (auto& o : stack)
+    for (auto& o : stack.s)
         o.markvalue(g);
 
     return 0;

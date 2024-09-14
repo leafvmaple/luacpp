@@ -157,7 +157,7 @@ void lua_pop(lua_State* L, int n) {
 
 void lua_remove(lua_State* L, int idx) {
     TValue* p = index2adr(L, idx);
-    L->stack.erase(p - L->stack.data() + L->stack.begin());
+    L->stack.erase(p);
 }
 
 bool lua_isnil(lua_State* L, int idx) {

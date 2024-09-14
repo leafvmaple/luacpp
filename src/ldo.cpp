@@ -56,7 +56,7 @@ int luaD_poscall(lua_State* L, TValue* firstResult) {
     TValue* res = ci.func;
     int wanted = ci.nresults;
 
-    L->base_ci.pop_back();
+    L->base_ci.pop();
     auto& prev = L->base_ci.back();
 
     L->base = prev.base;

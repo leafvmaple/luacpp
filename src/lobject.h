@@ -93,24 +93,54 @@ using lua_GCHash = std::unordered_map<size_t, lua_GCList>;
 using lua_Number = double;
 
 template<typename T>
-struct lua_stack : std::vector<T> {
+struct lua_stack {
     void settop(const T* top) {
         // 为什么要加this->？
-        this->resize(top - &this->front());
+        s.resize(top - &s.front());
     }
     // TODO
     const T pop(int n = 1) {
-        const T ret = this->operator[](this->size() - n);
+        const T ret = s[s.size() - n];
         while (n--)
-            this->pop_back();
+            s.pop_back();
         return ret;
     }
     void expand(int diff) {
-        this->resize(this->size() + diff);
+        s.resize(s.size() + diff);
     }
     auto top() {
-        return this->_Unchecked_end();
+        return s._Unchecked_end();
     }
+    void erase(size_t index) {
+        s.erase(s.begin() + index);
+    }
+    void erase(const T* p) {
+        erase(p - s.data());
+    }
+    // Bridge
+    auto& back() {
+        return s.back();
+    }
+    auto& operator[](size_t index) {
+        return s[index];
+    }
+    auto size() {
+        return s.size();
+    }
+    void resize(size_t size) {
+        s.resize(size);
+    }
+    void push_back(const T& value) {
+        s.push_back(value);
+    }
+    auto& emplace_back(T&& value) {
+        return s.emplace_back(value);
+    }
+    auto& emplace_back() {
+        return s.emplace_back();
+    }
+
+    std::vector<T> s;
 };
 
 void* operator new(std::size_t size, lua_State* L);
