@@ -29,7 +29,7 @@ enum MARKED_TYPE {
     KEYWEAKBIT = FINALIZEDBIT,
     VALUEWEAKBIT,
     FIXEDBIT, // 不会GC（关键字）
-    SFIXEDBIT, // 主Thread，luaC_freeall的时候也不会GC
+    SFIXEDBIT, // Super fixed, 主Thread会使用，确保luaC_freeall的时候也不会GC
 
     MARKED_COUNT,
 };
@@ -94,15 +94,12 @@ using lua_Number = double;
 
 template<typename T>
 struct lua_stack {
-    void settop(const T* top) {
-        // 为什么要加this->？
-        s.resize(top - &s.front());
+    void settop(const T* p) {
+        s.resize(p - &s.front());
     }
-    // TODO
-    const T pop(int n = 1) {
-        const T ret = s[s.size() - n];
-        while (n--)
-            s.pop_back();
+    auto pop(int n = 1) {
+        const T ret = *(top() - n);
+        expand(-n);
         return ret;
     }
     void expand(int diff) {
