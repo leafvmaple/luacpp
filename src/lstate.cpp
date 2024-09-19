@@ -14,7 +14,7 @@ struct LG {
 // 2. 初始化全局变量表
 void preinit_state(lua_State* L, global_State* g) {
     G(L) = g;
-    gt(L)->setnil("#Global Table#");
+    gt(L)->setvalue(nullptr, "#Global Table#");
 }
 
 // 1. 初始化base_ci
@@ -25,7 +25,7 @@ void stack_init(lua_State* L) {
     L->stack.s.reserve(BASIC_STACK_SIZE + EXTRA_STACK);
 
     auto& ci = L->base_ci.emplace_back();
-    ci.func = &L->stack.emplace_back(TValue("[Init] #Function Entry#"));
+    ci.func = &L->stack.emplace_back(nullptr, "[Init] #Function Entry#");
 
     ci.base = ci.func + 1;
 

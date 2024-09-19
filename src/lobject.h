@@ -212,17 +212,10 @@ struct TValue {
     std::string name;
 #endif
 
-    void setnil() {
+    void setvalue(nullptr_t) {
         tt = LUA_TNIL;
         gc = nullptr;
     }
-    void setnil(const char* const debug) {
-#ifdef _DEBUG
-        name = debug;
-#endif
-        setnil();
-    }
-
     void setvalue(const lua_Number _n) {
         tt = LUA_TNUMBER;
         n = _n;
@@ -272,8 +265,7 @@ struct TValue {
         return tt == LUA_TSTRING;
     }
 
-    TValue() { setnil(); }
-    TValue(const char* const debug) { setnil(debug); }
+    TValue() { setvalue(nullptr); }
 
     template<typename T, typename... Args>
     explicit TValue(const T x, Args... args) { setvalue(x, args...); }
