@@ -55,7 +55,7 @@ int Table::traverse(global_State* g) {
     g->gray.pop_front();
     for (auto& v : array)
         v.gc->trymark(g);
-    for (auto& [hash, p] : node) {
+    for (auto& [_, p] : node) {
         if (p.second.isnil())
             /* it = node.erase(it)*/;
         else {

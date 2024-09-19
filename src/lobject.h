@@ -265,7 +265,6 @@ struct TValue {
     inline bool isnil() const {
         return tt == LUA_TNIL;
     }
-
     inline bool isnumber() const {
         return tt == LUA_TNUMBER;
     }
