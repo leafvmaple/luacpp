@@ -34,7 +34,7 @@ enum MARKED_TYPE {
     MARKED_COUNT,
 };
 
-#define FIRST_RESERVED	257
+constexpr int FIRST_RESERVED = 257;
 
 enum RESERVED {
     /* terminal symbols denoted by reserved words */
@@ -82,7 +82,7 @@ enum GC_STATE {
     GCSfinalize,
 };
 
-#define NUM_RESERVED	(TK_RESERVED_COUNT - FIRST_RESERVED)
+constexpr int NUM_RESERVED = TK_RESERVED_COUNT - FIRST_RESERVED;
 
 struct global_State;
 struct GCheader;
@@ -118,7 +118,9 @@ struct lua_stack {
     auto& back() {
         return s.back();
     }
-    auto& operator[](size_t index) {
+    auto& operator[](int index) {
+        if (index < 0)
+            index = static_cast<int>(s.size() + index);
         return s[index];
     }
     auto size() {
@@ -395,6 +397,6 @@ struct LClosure : Closure {
 };
 
 const TValue luaO_nilobject_;
-#define luaO_nilobject (&luaO_nilobject_)
+constexpr const TValue* luaO_nilobject = &luaO_nilobject_;
 
 int luaO_str2d(const char* s, lua_Number* result);

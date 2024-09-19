@@ -10,9 +10,7 @@ using lu_int32 = unsigned int;
 using l_mem = ptrdiff_t;
 using lu_mem = size_t;
 
-#ifndef MINSTRTABSIZE
-#define MINSTRTABSIZE	32
-#endif
+constexpr int MINSTRTABSIZE = 32;
 
 enum OpCode {
     /*----------------------------------------------------------------------

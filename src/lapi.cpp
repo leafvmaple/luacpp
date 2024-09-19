@@ -46,7 +46,7 @@ static void f_Ccall(lua_State* L, CCallS* c) {
     cl->f = c->func;
     L->stack.emplace_back(TValue(cl, "[Call] CClosure"));
     L->stack.emplace_back(TValue(c->ud, "[Call] UsderData"));
-    luaD_call(L, L->stack.top() - 2, 0); // 指向cl
+    luaD_call(L, &L->stack[-2], 0); // 指向cl
 }
 
 int lua_gc(lua_State* L, int what, int data) {
@@ -124,9 +124,9 @@ void* lua_touserdata(lua_State* L, int idx) {
 
 void lua_gettable(lua_State* L, int idx) {
     Table* t = index2adr(L, idx)->h;
-    TValue* key = &L->stack.back();
+    TValue& key = L->stack.back();
 
-    *(key) = (*t)[key];
+    key = (*t)[&key];
 }
 
 void lua_getfield(lua_State* L, int idx, const char* k) {
@@ -174,7 +174,7 @@ int lua_type(lua_State* L, int idx) {
 }
 
 void lua_call(lua_State* L, int nargs, int nresults) {
-    TValue* func = &L->stack.back() - nargs;
+    TValue* func = &L->stack[-nargs - 1];
     luaD_call(L, func, nresults);
 }
 

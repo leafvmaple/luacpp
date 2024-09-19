@@ -7,11 +7,11 @@
 #include "lobject.h"
 #include "ltm.h"
 
-#define LUA_MINSTACK     20
-#define BASIC_CI_SIZE    8
-#define BASIC_STACK_SIZE (2 * LUA_MINSTACK)
+constexpr int LUA_MINSTACK = 20;
+constexpr int BASIC_CI_SIZE = 8;
+constexpr int BASIC_STACK_SIZE = 2 * LUA_MINSTACK;
 
-#define EXTRA_STACK   5
+constexpr int EXTRA_STACK = 5;
 
 struct CallInfo
 {
