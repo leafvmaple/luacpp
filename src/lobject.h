@@ -114,6 +114,10 @@ struct lua_stack {
     void erase(const T* p) {
         erase(p - s.data());
     }
+    template<typename _Ty>
+    auto& emplace_back(_Ty v, const char* debug) {
+        return s.emplace_back(T(v, debug));
+    }
     // Bridge
     auto& back() {
         return s.back();

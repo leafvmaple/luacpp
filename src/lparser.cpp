@@ -92,8 +92,8 @@ void LexState::openfunc(FuncState* fs) {
     fs->ls = this;
     this->fs = fs;
 
-    L->stack.emplace_back(TValue(fs->h, "[Open Function] Const String Table"));
-    L->stack.emplace_back(TValue(fs->f, "[Open Function] Proto"));
+    L->stack.emplace_back(fs->h, "[Open Function] Const String Table");
+    L->stack.emplace_back(fs->f, "[Open Function] Proto");
 }
 
 void LexState::closefunc() {

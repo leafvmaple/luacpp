@@ -44,8 +44,8 @@ Table* getcurrenv(lua_State* L) {
 static void f_Ccall(lua_State* L, CCallS* c) {
     CClosure* cl = new (L) CClosure(L, 0, getcurrenv(L));
     cl->f = c->func;
-    L->stack.emplace_back(TValue(cl, "[Call] CClosure"));
-    L->stack.emplace_back(TValue(c->ud, "[Call] UsderData"));
+    L->stack.emplace_back(cl, "[Call] CClosure");
+    L->stack.emplace_back(c->ud, "[Call] UsderData");
     luaD_call(L, &L->stack[-2], 0); // Ö¸Ïòcl
 }
 
@@ -65,7 +65,7 @@ void lua_pushnil(lua_State* L) {
 }
 
 void lua_pushlstring(lua_State* L, const char* s, size_t l, char const* debug) {
-    L->stack.emplace_back(TValue(strtab(L)->newlstr(L, s, l), debug ? debug : s));
+    L->stack.emplace_back(strtab(L)->newlstr(L, s, l), debug ? debug : s);
 }
 
 void lua_pushstring(lua_State* L, const char* s, char const* debug) {
@@ -84,7 +84,7 @@ void lua_pushcclosure(lua_State* L, lua_CFunction fn, int n, char const* debug) 
     cl->f = fn;
     while (n--)
         cl->upvalue[n] = L->stack.pop();
-    L->stack.emplace_back(TValue(cl, debug));
+    L->stack.emplace_back(cl, debug);
 }
 
 void lua_pushcfunction(lua_State* L, lua_CFunction f, char const* debug) {
@@ -110,7 +110,7 @@ void lua_setglobal(lua_State* L, const char* s) {
 }
 
 void lua_createtable(lua_State* L, int narr, int nrec, char const* debug) {
-    L->stack.emplace_back(TValue(new (L) Table(L, narr, nrec), debug));
+    L->stack.emplace_back(new (L) Table(L, narr, nrec), debug);
 }
 
 void* lua_touserdata(lua_State* L, int idx) {
@@ -179,13 +179,9 @@ void lua_call(lua_State* L, int nargs, int nresults) {
 }
 
 int lua_cpcall(lua_State* L, lua_CFunction func, void* ud) {
-    struct CCallS c;
-
-    c.func = func;
-    c.ud = ud;
+    struct CCallS c {func, ud};
 
     f_Ccall(L, &c);
-
     // return luaD_pcall(L, f_Ccall, &c, _savestack(L, L->top));
     return 1;
 

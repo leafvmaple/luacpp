@@ -79,7 +79,7 @@ void f_parser(lua_State* L, SParser* p) {
     Proto* tf = luaY_parser(L, p->z, p->name);
     LClosure* cl = new (L) LClosure(L, 0, gt(L)->h); // 环境表为全局表
     cl->p = tf;
-    L->stack.emplace_back(TValue(cl, p->name));
+    L->stack.emplace_back(cl, p->name);
 }
 
 int luaD_protectedparser(lua_State* L, ZIO* z, const char* name) {
