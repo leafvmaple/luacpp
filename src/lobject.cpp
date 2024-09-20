@@ -2,6 +2,8 @@
 #include "luaconf.h"
 #include "lstate.h"
 
+const TValue luaO_nilobject_(nullptr);
+
 void* operator new(std::size_t size, lua_State* L) {
     global_State* g = G(L);
     g->totalbytes += size;

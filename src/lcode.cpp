@@ -14,7 +14,7 @@ Instruction& FuncState::getcode(expdesc* e) {
 // f->k[idx] = v
 int FuncState::addk(TValue* k, TValue* v) {
     size_t nk = f->k.size();
-    h->set(L, k, (lua_Number)nk);
+    (*h)[k] = (lua_Number)nk;
     f->k.emplace_back(*v);
     return nk;
 }

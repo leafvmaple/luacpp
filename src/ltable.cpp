@@ -66,6 +66,14 @@ int Table::traverse(global_State* g) {
     return 0;
 }
 
+TValue* Table::setnum(lua_State* L, int key) {
+    const TValue* p = getnum(key);
+    if (p != luaO_nilobject)
+        return (TValue*)p;
+    TValue k((lua_Number)key);
+    return newkey(L, this, &k);
+}
+
 TValue* Table::setstr(lua_State* L, const TString* key) {
     const TValue* p = getstr(key);
     if (p != luaO_nilobject)

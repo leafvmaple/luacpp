@@ -88,7 +88,7 @@ struct global_State;
 struct GCheader;
 
 using lua_GCList = std::list<GCheader*>;
-using lua_GCHash = std::unordered_map<size_t, lua_GCList>;
+using lua_GCMap = std::unordered_map<size_t, lua_GCList>;
 
 using lua_Number = double;
 
@@ -265,6 +265,12 @@ struct TValue {
         return tt == LUA_TSTRING;
     }
 
+    template<typename T>
+    TValue& operator=(const T x) {
+        setvalue(x);
+        return *this;
+    }
+
     TValue() { setvalue(nullptr); }
 
     template<typename T, typename... Args>
@@ -307,13 +313,9 @@ struct Table : GCheader {
 
     virtual int traverse(global_State* g);
 
+    TValue* setnum(lua_State* L, int key);
     TValue* setstr(lua_State* L, const TString* key);
     TValue* set(lua_State* L, const TValue* key);
-    template<typename T>
-    void set(lua_State* L, const TValue* key, T value) {
-        TValue* idx = set(L, key);
-        idx->setvalue(value);
-    }
 
     const TValue& operator[](const TValue* key) const {
         return *get(key);
@@ -327,6 +329,9 @@ struct Table : GCheader {
 
     TValue& operator[](const TValue* key) {
         return *set(L, key);
+    }
+    TValue& operator[](lua_Number key) {
+        return *setnum(L, static_cast<int>(key));
     }
     TValue& operator[](const TString* key) {
         return *setstr(L, key);
@@ -391,7 +396,7 @@ struct LClosure : Closure {
     void execute(lua_State* L, int nexeccalls);
 };
 
-const TValue luaO_nilobject_;
+extern const TValue luaO_nilobject_;
 constexpr const TValue* luaO_nilobject = &luaO_nilobject_;
 
 int luaO_str2d(const char* s, lua_Number* result);

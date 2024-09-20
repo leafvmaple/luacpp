@@ -25,7 +25,7 @@ struct CallInfo
 
 struct stringtable {
     // TODO
-    lua_GCHash hash;
+    lua_GCMap hash;
     lu_int32 nuse = 0;
 
     void resize(int newsize);
@@ -41,8 +41,9 @@ struct global_State
 
     std::list<GCheader*> gray;
 
-    lua_GCHash::iterator sweepstrgc;  /* 字符串池GC当前位置*/
     lua_GCList rootgc;  /* 根GC池 */
+
+    lua_GCMap::iterator sweepstrgc;  /* 字符串池GC当前位置*/
     lua_GCList::iterator sweepgc;  /* 根GC当前位置 */
 
     lu_mem totalbytes = 0;  /* total bytes allocated */
