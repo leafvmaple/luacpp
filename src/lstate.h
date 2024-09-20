@@ -37,7 +37,7 @@ struct global_State
 {
     stringtable strt;
     lua_Marked currentwhite;
-    GC_STATE gcstate;
+    GC_STATE gcstate = GCSpause;
 
     std::list<GCheader*> gray;
 

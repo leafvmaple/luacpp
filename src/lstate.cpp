@@ -5,7 +5,7 @@
 #include "lgc.h"
 
 struct LG {
-    lua_State    l;
+    lua_State l;
     global_State g;
 };
 
@@ -54,6 +54,8 @@ lua_State* lua_newstate() {
 
     L = &l->l;
     g = &l->g;
+
+    L->setname("Main Thread");
 
     g->mainthread = L;
     g->currentwhite.set(WHITE0BIT);

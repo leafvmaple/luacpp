@@ -147,7 +147,7 @@ struct lua_stack {
 };
 
 void* operator new(std::size_t size, lua_State* L);
-void operator delete(void* p, lua_State* L) noexcept;
+void operator delete(void* p, std::size_t size, lua_State* L) noexcept;
 
 struct lua_Marked {
     std::bitset<MARKED_COUNT> bit;
@@ -186,6 +186,12 @@ struct GCheader {
 
     void link(lua_State* L);
     void trymark(global_State* g);
+
+    void setname(const char* debug) {
+#ifdef _DEBUG
+        name = debug;
+#endif
+    }
 
     virtual ~GCheader() {}
 };

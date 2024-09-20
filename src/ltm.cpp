@@ -27,5 +27,6 @@ void luaT_init(lua_State* L) {
     for (int i = 0; i < TM_N; i++) {
         G(L)->tmname[i] = strtab(L)->newstr(L, luaT_eventname[i]);
         G(L)->tmname[i]->fix();
+        G(L)->tmname[i]->setname("Event Name");
     }
 }

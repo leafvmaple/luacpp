@@ -11,7 +11,7 @@ static lua_GCList::iterator sweeplist(lua_State* L, lua_GCList::iterator it, lua
             (*it++)->marked.maskmarks(g);
         }
         else {
-            delete *it;
+            delete (*it, L);
             it = list.erase(it);
         }
     }
@@ -148,6 +148,7 @@ void luaC_fullgc(lua_State* L) {
         g->gcstate = GCSsweepstring;
     }
 
+    // sweepstrgc sweepgc
     while (g->gcstate != GCSfinalize)
         singlestep(L);
 
