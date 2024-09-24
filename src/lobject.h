@@ -146,9 +146,6 @@ struct lua_stack {
     std::vector<T> s;
 };
 
-void* operator new(std::size_t size, lua_State* L);
-void operator delete(void* p, std::size_t size, lua_State* L) noexcept;
-
 struct lua_Marked {
     std::bitset<MARKED_COUNT> bit;
 
@@ -164,6 +161,7 @@ struct lua_Marked {
 
     void togray();
     void toblack();
+    void tootherwhite();
 
     bool iswhite() const;
     bool isblack() const;
@@ -179,6 +177,8 @@ struct GCheader {
     std::string name;
 #endif
     lua_Marked marked;
+    lua_State* L = nullptr;
+    size_t _size = 0;
 
     virtual void markobject(global_State* g);
     virtual int traverse(global_State* g);
@@ -282,8 +282,6 @@ struct TValue {
     template<typename T, typename... Args>
     explicit TValue(const T x, Args... args) { setvalue(x, args...); }
 
-    ~TValue() {}
-
     void markvalue(global_State* g);
 };
 
@@ -294,8 +292,9 @@ struct TString : GCheader {
     enum { t = LUA_TSTRING };
 
     TString(lua_State* L, const char* str, size_t l);
+    ~TString();
 
-    virtual size_t hash() const override {
+    size_t hash() const override {
         return std::hash<std::string>::_Do_hash(s);
     }
 
@@ -310,12 +309,12 @@ struct Table : GCheader {
     std::vector<TValue> array;
     std::unordered_map<size_t, std::pair<TValue, TValue>> node;
 
-    lua_State* L = nullptr;
     GCheader* gclist = nullptr;
 
     enum { t = LUA_TTABLE };
 
     Table(lua_State* _L, int narray, int nhash);
+    ~Table();
 
     virtual int traverse(global_State* g);
 
@@ -379,6 +378,7 @@ struct Proto : GCheader {
     enum { t = LUA_TPROTO };
 
     Proto(lua_State* L);
+    ~Proto();
 };
 
 // C函数中的指令和数据都在代码段数据段中，只需要一个函数指针入口即可
@@ -387,6 +387,7 @@ struct CClosure : Closure {
     std::vector<TValue> upvalue;
 
     CClosure(lua_State* L, int nelems, Table* e);
+    ~CClosure();
 
     virtual int precall(lua_State* L, TValue* func, int nresults);
 };
@@ -397,6 +398,7 @@ struct LClosure : Closure {
     std::vector<UpVal*> upvals;
 
     LClosure(lua_State* L, int nelems, Table* e);
+    ~LClosure();
 
     virtual int precall(lua_State* L, TValue* func, int nresults);
     void execute(lua_State* L, int nexeccalls);

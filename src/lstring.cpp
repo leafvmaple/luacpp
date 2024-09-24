@@ -2,13 +2,20 @@
 #include "lstate.h"
 #include "lgc.h"
 
-TString::TString(lua_State* L, const char* str, size_t l) {
+TString::TString(lua_State* _L, const char* str, size_t l) {
+    L = _L;
     marked.towhite(G(L));
     s = std::string(str, l);
+
+    G(L)->totalbytes += sizeof(TString) + s.size();
+}
+
+TString::~TString() {
+    G(L)->totalbytes -= sizeof(TString) + s.size();
 }
 
 void stringtable::resize(int newsize) {
-    hash.reserve(newsize);
+    hash.reserve(newsize); 
 }
 
 TString* stringtable::newstr(lua_State* L, const char* s) {
@@ -28,7 +35,7 @@ TString* stringtable::newlstr(lua_State* L, const char* str, size_t l) {
             return ts;
     }
 
-    auto ts = new (L) TString(L, str, l);
+    auto ts = new TString(L, str, l);
     list.emplace_back(ts);
     return ts;
 }

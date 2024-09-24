@@ -77,7 +77,7 @@ struct SParser {  /* data to `f_parser' */
 
 void f_parser(lua_State* L, SParser* p) {
     Proto* tf = luaY_parser(L, p->z, p->name);
-    LClosure* cl = new (L) LClosure(L, 0, gt(L)->h); // 环境表为全局表
+    LClosure* cl = new LClosure(L, 0, gt(L)->h); // 环境表为全局表
     cl->p = tf;
     L->stack.emplace_back(cl, p->name);
 }

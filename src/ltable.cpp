@@ -14,11 +14,15 @@ static void setnodevector(lua_State* L, Table* t, int size) {
 }
 
 Table::Table(lua_State* _L, int narray, int nhash) {
-    L = _L;
-    link(L);
+    link(_L);
+    G(L)->totalbytes += sizeof(Table);
 
     setarrayvector(L, this, narray);
     setnodevector(L, this, nhash);
+}
+
+Table::~Table() {
+    G(L)->totalbytes -= sizeof(Table);
 }
 
 TValue* newkey(lua_State* L, Table* t, const TValue* key) {

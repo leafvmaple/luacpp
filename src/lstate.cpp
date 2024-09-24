@@ -35,8 +35,8 @@ void stack_init(lua_State* L) {
 void f_luaopen(lua_State* L) {
     stack_init(L);
 
-    gt(L)->setvalue(new (L) Table(L, 0, 2), "#Global Table#");
-    registry(L)->setvalue(new (L) Table(L, 0, 2), "Registry Table");
+    gt(L)->setvalue(new Table(L, 0, 2), "#Global Table#");
+    registry(L)->setvalue(new Table(L, 0, 2), "Registry Table");
     strtab(L)->resize(MINSTRTABSIZE);
 
     luaT_init(L);

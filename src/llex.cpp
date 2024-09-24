@@ -52,6 +52,7 @@ void luaX_init(lua_State* L) {
         TString* ts = strtab(L)->newstr(L, luaX_tokens[i]);
         ts->fix();
         ts->reserved = (RESERVED)(i + FIRST_RESERVED);
+        ts->setname("Lex Tokens");
     }
 }
 

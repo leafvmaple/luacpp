@@ -6,12 +6,12 @@ constexpr int GCSWEEPMAX = 40;
 static lua_GCList::iterator sweeplist(lua_State* L, lua_GCList::iterator it, lua_GCList& list, lu_mem count) {
     global_State* g = G(L);
 
-    for (int i = 0; i < list.size() && i < count; i++) {
+    for (int i = 0; it != list.end() && i < count; i++) {
         if (!(*it)->marked.isdead(g) || (*it)->marked[FIXEDBIT]) {
             (*it++)->marked.maskmarks(g);
         }
         else {
-            delete (*it, L);
+            delete (*it);
             it = list.erase(it);
         }
     }
@@ -39,6 +39,17 @@ static l_mem propagatemark(global_State* g) {
     return 0;
 }
 
+static void atomic(lua_State* L) {
+    global_State* g = G(L);
+
+    L->trymark(g);
+
+    g->currentwhite.tootherwhite();
+    g->sweepstrgc = strtab(L)->hash.begin();
+    g->sweepgc = g->rootgc.begin();
+    g->gcstate = GCSsweepstring;
+}
+
 static l_mem singlestep(lua_State* L) {
     global_State* g = G(L);
     switch (g->gcstate) {
@@ -46,7 +57,7 @@ static l_mem singlestep(lua_State* L) {
         if (!g->gray.empty())
             return propagatemark(g);
         else {
-            // atomic(L);  /* finish mark phase */
+            atomic(L);  /* finish mark phase */
             return 0;
         }
     }
@@ -63,6 +74,12 @@ static l_mem singlestep(lua_State* L) {
             g->gcstate = GCSfinalize;  /* end sweep phase */
         break;
     }
+    case GCSfinalize: {
+        g->gcstate = GCSpause;  /* end collection */
+        break;
+    }
+    default:
+        break;
     }
     return 0;
 }
@@ -77,7 +94,8 @@ int GCheader::traverse(global_State* g) {
     return 0;
 }
 
-void GCheader::link(lua_State* L) {
+void GCheader::link(lua_State* _L) {
+    L = _L;
     global_State* g = G(L);
 
     g->rootgc.emplace_front(this);
@@ -110,6 +128,11 @@ void lua_Marked::togray() {
 
 void lua_Marked::toblack() {
     bit[BLACKBIT] = 1;
+}
+
+void lua_Marked::tootherwhite() {
+    bit[WHITE0BIT].flip();
+    bit[WHITE1BIT].flip();
 }
 
 bool lua_Marked::iswhite() const {
