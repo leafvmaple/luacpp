@@ -185,7 +185,7 @@ struct GCheader {
     virtual size_t hash() const { return 0; }
 
     void link(lua_State* L);
-    void trymark(global_State* g);
+    void mark(global_State* g);
 
     void setname(const char* debug) {
 #ifdef _DEBUG

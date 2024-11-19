@@ -58,7 +58,7 @@ const TValue* Table::get(const TValue* key) const {
 int Table::traverse(global_State* g) {
     g->gray.pop_front();
     for (auto& v : array)
-        v.gc->trymark(g);
+        v.gc->mark(g);
     for (auto& [_, p] : node) {
         if (p.second.isnil())
             /* it = node.erase(it)*/;

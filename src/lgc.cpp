@@ -24,7 +24,7 @@ static void markroot(lua_State* L) {
 
     g->gray.clear();
 
-    g->mainthread->trymark(g);
+    g->mainthread->mark(g);
     gt(g->mainthread)->markvalue(g);
     registry(L)->markvalue(g);
 
@@ -42,7 +42,7 @@ static l_mem propagatemark(global_State* g) {
 static void atomic(lua_State* L) {
     global_State* g = G(L);
 
-    L->trymark(g);
+    L->mark(g);
 
     g->currentwhite.tootherwhite();
     g->sweepstrgc = strtab(L)->hash.begin();
@@ -102,14 +102,14 @@ void GCheader::link(lua_State* _L) {
     marked.towhite(g);
 }
 
-void GCheader::trymark(global_State* g) {
+void GCheader::mark(global_State* g) {
     if (marked.iswhite())
         markobject(g);
 }
 
 void TValue::markvalue(global_State* g) {
     if (tt >= LUA_TSTRING) {
-        gc->trymark(g);
+        gc->mark(g);
     }
 }
 
