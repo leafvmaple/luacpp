@@ -6,7 +6,7 @@
 #include "llex.h"
 
 Instruction& FuncState::getcode(expdesc* e) {
-    return f->code[e->info];
+    return f->codeinfo[e->info].code;
 }
 
 // 给FuncState记录一个新增变量
@@ -20,10 +20,8 @@ int FuncState::addk(TValue* k, TValue* v) {
 }
 
 int FuncState::code(Instruction i, int line) {
-    int count = f->code.size();
-    f->code.emplace_back(i);
-    f->lineinfo.emplace_back(line);
-    return count;
+    f->codeinfo.emplace_back(Proto::Code( i, line ));
+    return f->codeinfo.size() - 1;
 }
 
 void FuncState::discharge2reg(expdesc* e, int reg) {
