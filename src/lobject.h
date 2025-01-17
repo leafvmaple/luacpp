@@ -186,6 +186,7 @@ struct GCheader {
 
     void link(lua_State* L);
     void trymark(global_State* g);
+    void markblack(global_State* g);
 
     void setname(const char* debug) {
 #ifdef _DEBUG
@@ -370,14 +371,10 @@ struct UpVal : GCheader {
 
 // 包含操作和数据的完整可执行模块
 struct Proto : GCheader {
-    struct Code {
-        Instruction code;
-        int p;
-    };
-    
-    std::vector<TValue> k; /* 被该函数引用到的常量 */
-    std::vector<Code>   c; /* 指令列表 */
-    std::vector<Proto*> p; /* 函数内嵌套函数 */
+    std::vector<TValue>      k; /* 被该函数引用到的常量 */
+    std::vector<Instruction> code; /* 指令列表 */
+    std::vector<int>         line; /* 指令列表 */
+    std::vector<Proto*>      p; /* 函数内嵌套函数 */
 
     enum { t = LUA_TPROTO };
 

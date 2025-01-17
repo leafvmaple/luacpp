@@ -17,7 +17,7 @@ int LClosure::precall(lua_State* L, TValue* func, int nresults) {
     ci.base = ci.func + 1;
 
     L->base = ci.base;
-    L->savedpc = &p->c.front().code;
+    L->savedpc = p->code.data();
 
     execute(L, 1);
 

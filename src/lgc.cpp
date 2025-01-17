@@ -31,10 +31,12 @@ static void markroot(lua_State* L) {
     g->gcstate = GCSpropagate;
 }
 
+// mark a object on gray list
 static l_mem propagatemark(global_State* g) {
     GCheader* o = g->gray.front();
+    g->gray.pop_front();
 
-    o->marked.toblack();
+    o->markblack(g);
     o->traverse(g);
     return 0;
 }
@@ -47,7 +49,6 @@ static void atomic(lua_State* L) {
     g->currentwhite.tootherwhite();
     g->sweepstrgc = strtab(L)->hash.begin();
     g->sweepgc = g->rootgc.begin();
-    g->gcstate = GCSsweepstring;
 }
 
 static l_mem singlestep(lua_State* L) {
@@ -56,10 +57,10 @@ static l_mem singlestep(lua_State* L) {
     case GCSpropagate: {
         if (!g->gray.empty())
             return propagatemark(g);
-        else {
+        else
             atomic(L);  /* finish mark phase */
-            return 0;
-        }
+        g->gcstate = GCSsweepstring;
+        break;
     }
     case GCSsweepstring: {
         auto& list = g->sweepstrgc->second;
@@ -105,6 +106,10 @@ void GCheader::link(lua_State* _L) {
 void GCheader::trymark(global_State* g) {
     if (marked.iswhite())
         markobject(g);
+}
+
+void GCheader::markblack(global_State* g) {
+    marked.toblack();
 }
 
 void TValue::markvalue(global_State* g) {

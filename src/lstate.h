@@ -39,8 +39,7 @@ struct global_State
     lua_Marked currentwhite;
     GC_STATE gcstate = GCSpause;
 
-    std::list<GCheader*> gray;
-
+    lua_GCList gray;
     lua_GCList rootgc;  /* 根GC池 */
 
     lua_GCMap::iterator sweepstrgc;  /* 字符串池GC当前位置*/

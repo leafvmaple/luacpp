@@ -56,7 +56,9 @@ const TValue* Table::get(const TValue* key) const {
 }
 
 int Table::traverse(global_State* g) {
-    g->gray.pop_front();
+    if (metatable) {
+        metatable->markobject(g);
+    }
     for (auto& v : array)
         v.gc->trymark(g);
     for (auto& [_, p] : node) {

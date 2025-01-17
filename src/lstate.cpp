@@ -75,7 +75,6 @@ lua_State* lua_newstate() {
 
 int lua_State::traverse(global_State* g) {
     // TODO
-    g->gray.pop_front();
     // marked.togray(); ?
 
     gt(this)->markvalue(g);
