@@ -20,4 +20,3 @@ int luaZ_fill(ZIO* z) {
     z->p = buff;
     return (*(z->p++));
 }
-

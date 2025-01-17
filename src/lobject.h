@@ -375,9 +375,9 @@ struct Proto : GCheader {
         int p;
     };
     
-    std::vector<TValue>      k; /* 被该函数引用到的常量 */
-    std::vector<Code> codeinfo; /* 指令列表 */
-    std::vector<Proto*>      p; /* 函数内嵌套函数 */
+    std::vector<TValue> k; /* 被该函数引用到的常量 */
+    std::vector<Code>   c; /* 指令列表 */
+    std::vector<Proto*> p; /* 函数内嵌套函数 */
 
     enum { t = LUA_TPROTO };
 
