@@ -38,12 +38,18 @@ namespace Base {
 
         return 0;
     }
+    static int setmetatable(lua_State* L) {
+        lua_settop(L, 2);
+        lua_setmetatable(L, 1);
+        return 1;
+    }
 }
 
 static const luaL_Reg base_funcs[] = {
     {"collectgarbage", Base::collectgarbage},
     {"print",          Base::print},
     {"tostring",       Base::tostring},
+    {"setmetatable",   Base::setmetatable},
     {nullptr, nullptr}
 };
 

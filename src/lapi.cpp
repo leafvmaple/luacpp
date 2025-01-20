@@ -99,6 +99,15 @@ void lua_settable(lua_State* L, int idx) {
     (*t)[&key] = value;
 }
 
+int lua_setmetatable(lua_State* L, int objindex) {
+    Table* obj = index2adr(L, objindex)->h;
+    Table* mt = L->stack.back().h;
+    // TODO check table
+    obj->metatable = mt;
+    L->stack.pop();
+    return 1;
+}
+
 void lua_setfield(lua_State* L, int idx, const char* k) {
     Table* t = index2adr(L, idx)->h;
 

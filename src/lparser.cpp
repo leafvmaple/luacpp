@@ -152,10 +152,12 @@ void LexState::body(expdesc* e, int needself, int line) {
 }
 
 int LexState::explist1(expdesc* v) {
-    /* explist1 -> expr { `,' expr } */
+    /* explist1 -> expr  */
     int n = 1;
     expr(v);
+    return 1;
     while (testnext(',')) {
+        expr(v);
         n++;
     }
 
@@ -187,6 +189,14 @@ void LexState::funcargs(expdesc* f) {
         fs->exp2nextreg(&args);
     nparams = fs->freereg - (base + 1);
     init_exp(f, VCALL, fs->codeABC(OP_CALL, base, nparams + 1, 2));
+}
+
+void LexState::constructor(expdesc* t)
+{
+    init_exp(t, VRELOCABLE, fs->codeABC(OP_NEWTABLE, 0, 0, 0));
+    fs->exp2nextreg(t);
+    checknext('{');
+    check_match('}');
 }
 
 /* prefixexp -> NAME */
@@ -229,6 +239,10 @@ void LexState::simpleexp(expdesc* v) {
     case TK_STRING: {
         codestring(v, t.seminfo.ts);
         break;
+    }
+    case '{': {  /* constructor */
+        constructor(v);
+        return;
     }
     default:
         primaryexp(v);
@@ -296,6 +310,7 @@ void LexState::statement() {
     {
     case TK_FUNCTION: {
         funcstat(linenumber);  /* stat -> funcstat */
+        break;
     }
     default: {
         exprstat();

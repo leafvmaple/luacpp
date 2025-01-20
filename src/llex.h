@@ -47,6 +47,7 @@ struct LexState {
     int explist1(expdesc* v);
     void funcargs(expdesc* f);
 
+    void constructor(expdesc* t);
     void prefixexp(expdesc* var);
     void primaryexp(expdesc* v);
     void simpleexp(expdesc* v);

@@ -61,6 +61,10 @@ void LClosure::execute(lua_State* L, int nexeccalls) {
             (*env)[&k[i.bc]] = *ra;
             continue;
         }
+        case OP_NEWTABLE: {
+            ra->setvalue(new Table(L, i.b, i.c), "#New Table#");
+            continue;
+        }
         default:
             break;
         }

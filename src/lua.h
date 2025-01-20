@@ -60,6 +60,7 @@ void lua_getfield(lua_State* L, int idx, const char* k);
 void lua_getglobal(lua_State* L, const char* k);
 
 void lua_settable(lua_State* L, int idx);
+int lua_setmetatable(lua_State* L, int objindex);
 void lua_setfield(lua_State* L, int idx, const char* k);
 void lua_setglobal(lua_State* L, const char* s);
 

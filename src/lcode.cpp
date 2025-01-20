@@ -20,10 +20,10 @@ int FuncState::addk(TValue* k, TValue* v) {
 }
 
 int FuncState::code(Instruction i, int line) {
-	int count = f->code.size();
-	f->code.emplace_back(i);
-	f->line.emplace_back(line);
-	return count;
+    int count = f->code.size();
+    f->code.emplace_back(i);
+    f->line.emplace_back(line);
+    return count;
 }
 
 void FuncState::discharge2reg(expdesc* e, int reg) {
@@ -71,6 +71,8 @@ int FuncState::codeABC(OpCode o, int A, int B, int C) {
 
 int FuncState::exp2anyreg(expdesc* e) {
     dischargevars(e);
+    if (e->k == VNONRELOC)
+        return e->info;
     exp2nextreg(e);
     return e->info;
 }
