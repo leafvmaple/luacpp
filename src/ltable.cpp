@@ -56,17 +56,33 @@ const TValue* Table::get(const TValue* key) const {
 }
 
 int Table::traverse(global_State* g) {
+    int weakkey = 0;
+    int weakvalue = 0;
     if (metatable) {
         metatable->markobject(g);
+        const TValue& mode = (*metatable)[g->tmname[TM_MODE]];
+        if (mode.isstring()) {
+            std::string s = mode.ts->s;
+            weakkey = s.find('k') != std::string::npos;
+            weakvalue = s.find('v') != std::string::npos;
+            if (weakkey || weakvalue)
+                g->weak.emplace_front(this);
+            if (weakkey && weakvalue)
+                return 1;
+        }
     }
-    for (auto& v : array)
-        v.gc->trymark(g);
+    if (!weakvalue)
+        for (auto& v : array)
+            v.gc->trymark(g);
+
     for (auto& [_, p] : node) {
         if (p.second.isnil())
             /* it = node.erase(it)*/;
         else {
-            p.first.markvalue(g); // 不会改变key值
-            p.second.markvalue(g);
+            if (!weakkey)
+                p.first.markvalue(g); // 不会改变key值
+            if (!weakvalue)
+                p.second.markvalue(g);
         }
     }
     return 0;

@@ -40,6 +40,7 @@ struct global_State
     GC_STATE gcstate = GCSpause;
 
     lua_GCList gray;
+    lua_GCList weak;
     lua_GCList rootgc;  /* 根GC池 */
 
     lua_GCMap::iterator sweepstrgc;  /* 字符串池GC当前位置*/

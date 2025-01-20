@@ -41,10 +41,20 @@ static l_mem propagatemark(global_State* g) {
     return 0;
 }
 
+static size_t propagateall(lua_GCList& l, global_State* g) {
+	for (auto& o : l) {
+		o->markblack(g);
+		o->traverse(g);
+	}
+	l.clear();
+	return 0;
+}
+
 static void atomic(lua_State* L) {
     global_State* g = G(L);
 
     L->trymark(g);
+    propagateall(g->weak, g);
 
     g->currentwhite.tootherwhite();
     g->sweepstrgc = strtab(L)->hash.begin();
