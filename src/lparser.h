@@ -67,7 +67,7 @@ struct expdesc {
             int info;
             int aux;
         };
-        lua_Number nval;  // 表达式为数字
+        lua_Number nval = 0;  // 表达式为数字
     };
 };
 

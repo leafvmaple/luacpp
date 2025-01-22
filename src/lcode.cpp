@@ -84,10 +84,7 @@ void FuncState::reserveregs(int n) {
 void FuncState::dischargevars(expdesc* e) {
     switch (e->k) {
     case VGLOBAL: {
-        // e->info在之前被赋值为标识符常量序号
-        // code = fs->h[e->info]
-        // A参数暂时设0，等待重分配的时候再赋予正确的值
-        // 处理完后，e->info指向指令位置
+        // pc[e->info]: local l0 = _G[e->info]，0等待重定位
         e->info = codeABx(OP_GETGLOBAL, 0, e->info);
         e->k = VRELOCABLE;
         break;
@@ -106,6 +103,7 @@ void FuncState::storevar(expdesc* var, expdesc* ex) {
     switch (var->k)
     {
     case VGLOBAL: {
+        // info = index of table
         int e = exp2anyreg(ex);
         codeABx(OP_SETGLOBAL, e, var->info);
         break;

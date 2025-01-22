@@ -44,7 +44,7 @@ void LexState::codestring(expdesc* e, TString* s) {
 }
 
 static int singlevaraux(FuncState* fs, TString* n, expdesc* var, int base) {
-    if (fs == nullptr) {
+    if (!fs) {
         init_exp(var, VGLOBAL, NO_REG);
         return VGLOBAL;
     }
@@ -292,7 +292,6 @@ void LexState::funcstat(int line) {
     body(&b, needself, line);
     fs->storevar(&v, &b);
 }
-
 
 void LexState::exprstat() {
     /* exprstat -> func | assignment */
